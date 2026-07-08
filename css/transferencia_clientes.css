@@ -1,0 +1,309 @@
+/* ============================
+   PAGE
+============================ */
+
+body{
+    background:#F5F7FB;
+    font-family:'Poppins',sans-serif;
+}
+
+.page-container{
+    padding-top:40px;
+    padding-bottom:40px;
+}
+
+/* ============================
+   CARD GENERAL
+============================ */
+
+.card-custom{
+    background:#fff;
+    border:none;
+    border-radius:20px;
+    padding:25px;
+    box-shadow:
+    0 8px 25px rgba(
+        0,
+        0,
+        0,
+        .05
+    );
+}
+
+/* ============================
+   WELCOME CARD
+============================ */
+
+.welcome-card{
+    background:
+    linear-gradient(
+        135deg,
+        #183B6B,
+        #16BFFD
+    );
+    color:white;
+    border-radius:25px;
+    padding:30px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+    box-shadow:
+    0 10px 30px rgba(
+        24,
+        59,
+        107,
+        .25
+    );
+}
+
+.welcome-card h2{
+    margin:0;
+    font-weight:700;
+}
+
+.welcome-card p{
+    margin-top:10px;
+    margin-bottom:0;
+    opacity:.9;
+}
+
+.folio-box{
+    text-align:right;
+}
+
+.folio-box span{
+    display:block;
+    font-size:.85rem;
+    opacity:.8;
+}
+
+.folio-box strong{
+    font-size:1.4rem;
+    letter-spacing:1px;
+}
+
+/* ============================
+   MEMBRESIA
+============================ */
+
+.membership-status-card{
+    margin-bottom:25px;
+}
+
+.status-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.status-header h4{
+    margin:0;
+    color:#183B6B;
+    font-weight:700;
+}
+
+.status-info small{
+    color:#6c757d;
+}
+
+.status-info h5{
+    margin-top:5px;
+    color:#183B6B;
+    font-weight:700;
+}
+
+/* ============================
+   BADGES
+============================ */
+
+.status-active{
+    background:#d4edda;
+    color:#155724;
+    padding:8px 15px;
+    border-radius:30px;
+    font-weight:600;
+}
+
+.status-expired{
+    background:#f8d7da;
+    color:#721c24;
+    padding:8px 15px;
+    border-radius:30px;
+    font-weight:600;
+}
+
+/* ============================
+   RESPONSIVE
+============================ */
+
+@media(max-width:768px){
+    .welcome-card{
+        flex-direction:column;
+        text-align:center;
+        gap:20px;
+    }
+
+    .folio-box{
+        text-align:center;
+    }
+}
+
+/* ============================
+   SUBIR COMPROBANTE
+============================ */
+
+.upload-card{
+    margin-bottom:30px;
+}
+
+.upload-header{
+    margin-bottom:25px;
+}
+
+.upload-header h4{
+    color:#183B6B;
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+.upload-header p{
+    color:#6c757d;
+    margin-bottom:0;
+}
+
+.upload-card label{
+    font-weight:600;
+    color:#183B6B;
+}
+
+.btn-upload{
+    width:100%;
+    margin-top:20px;
+    font-size:1rem;
+}
+
+/*============================
+HISTORIAL
+============================*/
+
+.history-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:25px;
+    margin-bottom:40px;
+}
+
+.history-card h4{
+    color:#183B6B;
+    font-weight:700;
+    margin-bottom:25px;
+}
+
+.history-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 0;
+    border-bottom:1px solid #ECECEC;
+}
+
+.history-item:last-child{
+    border-bottom:none;
+}
+
+.history-item strong{
+    display:block;
+    color:#183B6B;
+}
+
+.history-item small{
+    color:#777;
+}
+
+.status-pending{
+    background:#FFF4D6;
+    color:#C97B00;
+    padding:7px 14px;
+    border-radius:30px;
+    font-size:.85rem;
+    font-weight:600;
+}
+
+.status-confirmed{
+    background:#D8F8E1;
+    color:#1D8F46;
+    padding:7px 14px;
+    border-radius:30px;
+    font-size:.85rem;
+    font-weight:600;
+}
+
+.empty-history{
+    text-align:center;
+    padding:35px 20px;
+    color:#999;
+}
+
+.empty-history i{
+    font-size:2.5rem;
+    color:#16BFFD;
+    margin-bottom:15px;
+}
+
+@media(max-width:768px){
+    .history-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+.history-actions{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    align-items:flex-end;
+}
+
+.btn-view{
+    background:#183B6B;
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:8px 15px;
+    font-size:.85rem;
+    transition:.3s;
+}
+
+.btn-view:hover{
+    background:#16BFFD;
+}
+
+.review-grid{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    gap:30px;
+    align-items:start;
+}
+
+#adminPreviewImage{
+    max-height:650px;
+    width:100%;
+    object-fit:contain;
+    border-radius:15px;
+}
+
+@media(max-width:992px){
+.review-grid{
+    grid-template-columns:1fr;
+    }
+}
+
+.status-rejected{
+    background:#dc3545;
+    color:white;
+    padding:7px 14px;
+    border-radius:30px;
+    font-size:.85rem;
+    font-weight:600;
+}

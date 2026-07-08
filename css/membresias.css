@@ -1,0 +1,277 @@
+/* ===================================== */
+/* CONTENEDOR PRINCIPAL */
+/* ===================================== */
+
+.page-container{
+    padding:30px;
+}
+
+.card-custom{
+    background:#fff;
+    border-radius:25px;
+    padding:30px;
+    box-shadow:
+    0 15px 35px rgba(0,0,0,.08);
+}
+
+/* ===================================== */
+/* HEADER */
+/* ===================================== */
+
+.header-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+    flex-wrap:wrap;
+}
+
+.header-toolbar h2{
+    color:#183B6B;
+    font-weight:700;
+    margin-bottom:5px;
+}
+
+.header-toolbar p{
+    color:#6c757d;
+    margin:0;
+}
+
+/* ===================================== */
+/* BOTON AGREGAR */
+/* ===================================== */
+
+.btn-add{
+    border:none;
+    background:
+    linear-gradient(
+        135deg,
+        #183B6B,
+        #16BFFD
+    );
+    color:white;
+    padding:12px 24px;
+    border-radius:12px;
+    font-weight:600;
+    transition:.3s;
+}
+
+.btn-add:hover{
+    transform:
+    translateY(-3px);
+}
+
+/* ===================================== */
+/* BUSCADOR */
+/* ===================================== */
+
+.search-box{
+    position:relative;
+    margin-bottom:25px;
+}
+
+.search-box i{
+    position:absolute;
+    left:18px;
+    top:15px;
+    color:#6c757d;
+}
+
+.search-box input{
+    width:100%;
+    border:none;
+    background:#f4f7fc;
+    border-radius:15px;
+    padding:12px 15px 12px 45px;
+    outline:none;
+}
+
+/* ===================================== */
+/* TABLA */
+/* ===================================== */
+
+.custom-table{
+    margin-bottom:0;
+}
+
+.custom-table thead{
+    background:#183B6B;
+    color:white;
+}
+
+.custom-table thead th{
+    border:none;
+    padding:18px;
+}
+
+.custom-table tbody td{
+    padding:18px;
+    vertical-align:middle;
+}
+
+.custom-table tbody tr{
+    transition:.3s;
+}
+
+.custom-table tbody tr:hover{
+    background:#f8f9fa;
+}
+
+/* ===================================== */
+/* ESTADOS */
+/* ===================================== */
+
+.status-active{
+    background:#d4edda;
+    color:#28a745;
+    padding:8px 15px;
+    border-radius:50px;
+    font-size:.85rem;
+    font-weight:600;
+}
+
+.status-expired{
+    background:#f8d7da;
+    color:#dc3545;
+    padding:8px 15px;
+    border-radius:50px;
+    font-size:.85rem;
+    font-weight:600;
+}
+
+/* ===================================== */
+/* BOTONES TABLA */
+/* ===================================== */
+
+.btn-edit{
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:10px;
+    background:#16BFFD;
+    color:white;
+    margin-right:5px;
+}
+
+.btn-delete{
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:10px;
+    background:#dc3545;
+    color:white;
+}
+
+.btn-enable{
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:10px;
+    background:#28a745;
+    color:white;
+}
+
+/* ===================================== */
+/* MODAL */
+/* ===================================== */
+
+.custom-modal{
+    border:none;
+    border-radius:25px;
+    overflow:hidden;
+}
+
+.modal-header{
+    background:#183B6B;
+    color:white;
+}
+
+.modal-title{
+    font-weight:700;
+}
+
+.close{
+    color:white;
+    opacity:1;
+}
+
+/* ===================================== */
+/* INPUTS */
+/* ===================================== */
+
+.modern-input{
+    border:none;
+    background:#f4f7fc;
+    border-radius:12px;
+    padding:12px;
+}
+
+.modern-input:focus{
+    box-shadow:none;
+    border:2px solid #16BFFD;
+}
+
+/* ===================================== */
+/* BOTONES MODAL */
+/* ===================================== */
+
+.btn-save{
+    border:none;
+    color:white;
+    background:
+    linear-gradient(
+        135deg,
+        #183B6B,
+        #16BFFD
+    );
+    padding:10px 25px;
+    border-radius:12px;
+}
+
+.btn-cancel{
+    border:none;
+    background:#e9ecef;
+    padding:10px 25px;
+    border-radius:12px;
+}
+
+/*Boton remove*/
+.btn-remove{
+    width:40px;
+    height:40px;
+    border:none;
+    border-radius:10px;
+    background:#6c757d;
+    color:white;
+    margin-left:5px;
+}
+
+/* ===================================== */
+/* SWITCH PROMOCION */
+/* ===================================== */
+
+.custom-control-input:checked
+~ .custom-control-label::before{
+    background:#16BFFD;
+    border-color:#16BFFD;
+}
+
+/* ===================================== */
+/* RESPONSIVE */
+/* ===================================== */
+
+@media(max-width:768px){
+    .page-container{
+        padding:15px;
+    }
+
+    .header-toolbar{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:15px;
+    }
+
+    .btn-add{
+        width:100%;
+    }
+}

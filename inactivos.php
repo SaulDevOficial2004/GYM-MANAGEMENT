@@ -30,108 +30,17 @@ $total_personas = $rowTotal['personas'];
 
 <head>
 
-<meta charset="UTF-8">
+    <title>Inhabilitados | ProfitnessGym</title>
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-
-<title>Inhabilitados | ProfitnessGym</title>
-
-<link rel="shortcut icon"
-      href="img/logo_pfg-removebg-preview.ico">
-
-<!-- Bootstrap -->
-
-<link rel="stylesheet"
-href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-
-<!-- FontAwesome -->
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-<!-- SweetAlert -->
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- Toastify -->
-
-<link rel="stylesheet"
-href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-
-<!-- CSS -->
-
-<link rel="stylesheet"
-href="css/inactivos.css">
+    <?php include 'includes/head.php' ?>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/inactivos.css">
 
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-
-<nav class="navbar navbar-expand-lg navbar-custom">
-    <a class="navbar-brand d-flex align-items-center"
-       href="pagina.php">
-        <img src="img/logo_pfg-removebg-preview.png"
-             class="nav-logo">
-        <span class="brand-text">
-            ProfitnessGym
-        </span>
-    </a>
-
-    <button class="navbar-toggler"
-            type="button"
-            data-toggle="collapse"
-            data-target="#navbarNav">
-
-        <span class="navbar-toggler-icon"></span>
-
-    </button>
-
-    <div class="collapse navbar-collapse"
-         id="navbarNav">
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link active-link"
-                   href="pagina.php">
-                    <i class="fas fa-house-user"></i>
-                    Home
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="#"
-                   
-                   data-toggle="modal"
-                   data-target="#addPersonModal">
-
-                    <i class="fas fa-user-plus"></i>
-                    Agregar persona
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="personas.php">
-                    <i class="fas fa-users"></i>
-                    Personas
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="inactivos.php">
-                    <i class="fas fa-ban"></i>
-                    Inhabilitados
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
+<?php include 'includes/navbar.php' ?>
 
 <!-- CONTENIDO -->
 
@@ -302,17 +211,14 @@ href="css/inactivos.css">
 
 </div>
 
-<!-- JQUERY -->
+<?php include 'includes/modals/add_person_modal.php' ?>
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-
-<!-- BOOTSTRAP -->
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<?php include 'includes/footer.php' ?>
 
 <!-- JS -->
 
 <script src="js/inactivos.js"></script>
+<script src="js/personas/add_person.js"></script>
 
 </body>
 

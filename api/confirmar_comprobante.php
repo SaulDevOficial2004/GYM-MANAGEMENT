@@ -1,0 +1,394 @@
+<?php
+
+session_start();
+
+header('Content-Type: application/json');
+
+require_once "../php_action/conn_db.php";
+
+//VALIDAR SESION
+
+if(!isset($_SESSION['telefono'])){
+
+    echo json_encode([
+        "success"=>false,
+        "message"=>"Sesión expirada."
+    ]);
+
+    exit();
+}
+
+//VALIDAR ID
+
+if(empty($_POST['id'])){
+
+    echo json_encode([
+        "success"=>false,
+        "message"=>"Comprobante inválido."
+    ]);
+
+    exit();
+}
+
+if(empty($_POST['id']) || empty($_POST['membresia_id'])){
+
+    echo json_encode([
+        "success"=>false,
+        "message"=>"Datos inválidos."
+    ]);
+
+    exit();
+}
+
+$id = intval($_POST['id']);
+$membresia_id = intval($_POST['membresia_id']);
+
+//OBTENER LOGUEADO
+
+$telefono = $_SESSION['telefono'];
+
+$sqlUsuario = "
+    SELECT id
+    FROM usuarios
+    WHERE telefono = ?
+    LIMIT 1
+";
+
+$stmt = $connect->prepare($sqlUsuario);
+
+$stmt->bind_param(
+    "s",
+    $telefono
+);
+
+$stmt->execute();
+
+$resultUsuario = $stmt->get_result();
+
+if($resultUsuario->num_rows==0){
+
+    echo json_encode([
+        "success"=>false,
+        "message"=>"Usuario no encontrado."
+    ]);
+
+    exit();
+}
+
+$usuario = $resultUsuario->fetch_assoc();
+
+$usuario_id = $usuario['id'];
+
+//INICIAR TRANSACCION
+
+$connect->begin_transaction();
+
+try{
+
+    //BLOQUEAR COMPROBANTE
+
+    $sql="
+
+        SELECT
+
+            cp.*,
+            p.nombre,
+            p.fecha_ini,
+            p.fecha_fin,
+            p.estatus,
+            p.membresia_id
+
+        FROM comprobantes_pago cp
+        INNER JOIN personas p
+        ON p.id = cp.persona_id
+        WHERE cp.id = ?
+        FOR UPDATE
+
+    ";
+
+    $stmt=$connect->prepare($sql);
+    $stmt->bind_param("i",
+
+        $id
+
+    );
+
+    $stmt->execute();
+    $result=$stmt->get_result();
+
+    if($result->num_rows==0){
+
+        throw new Exception(
+
+            "Comprobante no encontrado."
+
+        );
+
+    }
+
+    $comprobante = $result->fetch_assoc();
+
+    $sqlMembresia = "
+
+        SELECT *
+        FROM membresias
+        WHERE id = ?
+        AND activo = 1
+        LIMIT 1
+
+    ";
+
+    $stmtMembresia = $connect->prepare($sqlMembresia);
+    $stmtMembresia->bind_param("i",
+
+        $membresia_id
+
+    );
+
+    $stmtMembresia->execute();
+    $resultMembresia = $stmtMembresia->get_result();
+
+    if($resultMembresia->num_rows == 0){
+
+        throw new Exception("La membresía seleccionada no existe.");
+
+    }
+
+    $membresia = $resultMembresia->fetch_assoc();
+
+    //VALIDAR STATUS
+
+    if(
+
+    $comprobante['status'] != 'PENDIENTE'){
+
+        throw new Exception(
+
+            "Este comprobante ya fue procesado."
+
+        );
+
+    }
+
+    //CALCULAR FECHAS
+
+    $hoy = new DateTime();
+
+    $fechaFinActual = new DateTime($comprobante['fecha_fin']);
+
+    if($fechaFinActual > $hoy){
+
+        $fechaInicio = clone $fechaFinActual;
+
+    }else{
+
+        $fechaInicio = clone $hoy;
+
+    }
+
+    $fechaFin = clone $fechaInicio;
+    $fechaFin->modify("+" . ($membresia['dias'] - 1) . " days");
+
+    //CALCULAR TOTAL
+
+    $total = $membresia['precio'];
+
+    if($membresia['promocion'] == 1 && !empty($comprobante['precio_promocion'])){
+
+        $total = $membresia['precio_promocion'];
+
+    }
+
+    //REGISTRAR VENTA
+
+    $sqlVenta="
+
+        INSERT INTO ventas
+        (
+            usuario_id,
+            tipo,
+            descripcion,
+            referencia_id,
+            total
+        )
+
+        VALUES
+
+        (
+            ?, ?, ?, ?, ?
+        )
+
+    ";
+
+    $stmtVenta = $connect->prepare($sqlVenta);
+    $tipo = 'MEMBRESIA';
+    $descripcion = "Renovación por transferencia - " . $membresia['nombre'];
+    $referencia_id = $comprobante['persona_id'];
+
+    $stmtVenta->bind_param("issid",
+
+    $usuario_id,
+    $tipo,
+    $descripcion,
+    $referencia_id,
+    $total
+
+    );
+
+    if(!$stmtVenta->execute()){
+
+        throw new Exception(
+
+            "No fue posible registrar la venta."
+
+        );
+    }
+
+    $venta_id = $connect->insert_id;
+
+    //HISTORIAL MEMBRESIA
+
+    $sqlHistorial="
+
+        INSERT INTO membresias_cliente
+        (
+
+            persona_id,
+            membresia_id,
+            venta_id,
+            fecha_inicio,
+            fecha_fin,
+            precio_pagado
+
+        )
+
+        VALUES
+
+        (
+            ?,?,?,?,?,?
+        )
+
+    ";
+
+    $stmtHistorial = $connect->prepare($sqlHistorial);
+
+    $fechaInicioSQL = $fechaInicio->format("Y-m-d");
+    $fechaFinSQL = $fechaFin->format("Y-m-d");
+
+    $stmtHistorial->bind_param("iiissd",
+
+        $comprobante['persona_id'],
+        $membresia_id,
+        $venta_id,
+        $fechaInicioSQL,
+        $fechaFinSQL,
+        $total
+
+    );
+
+    if(!$stmtHistorial->execute()){
+
+        throw new Exception(
+
+            "No fue posible registrar el historial."
+
+        );
+    }
+
+    //ACTUALIZAR PERSONA
+
+    $sqlPersona="
+
+        UPDATE personas SET
+
+            membresia_id=?,
+            fecha_ini=?,
+            fecha_fin=?,
+            estatus=1
+
+        WHERE id=?
+
+    ";
+
+    $stmtPersona = $connect->prepare($sqlPersona);
+
+    $stmtPersona->bind_param("issi",
+
+        $membresia_id,
+        $fechaInicioSQL,
+        $fechaFinSQL,
+        $comprobante['persona_id']
+
+    );
+
+    if(!$stmtPersona->execute()){
+
+        throw new Exception(
+
+            "No fue posible actualizar la persona."
+
+        );
+    }
+
+    //ACTUALIZAR COMPROBANTE
+
+    $sqlComp="
+
+        UPDATE comprobantes_pago SET
+
+            status='CONFIRMADO',
+            fecha_revision=NOW(),
+            revisado_por=?
+
+        WHERE id=?
+
+    ";
+
+    $stmtComp = $connect->prepare($sqlComp);
+
+    $stmtComp->bind_param("ii",
+
+        $usuario_id,
+        $id
+
+    );
+
+    if(!$stmtComp->execute()){
+
+        throw new Exception(
+
+            "No fue posible actualizar el comprobante."
+
+        );
+    }
+
+    //COMMIT
+
+    $connect->commit();
+
+    echo json_encode([
+
+        "success"=>true,
+        "message"=>"Pago confirmado correctamente."
+
+    ]);
+
+    }catch(Exception $e){
+
+        $connect->rollback();
+
+        echo json_encode([
+
+            "success"=>false,
+
+            "message"=>$e->getMessage()
+
+        ]);
+
+    }
+
+    $stmt->close();
+
+    $connect->close();
+
+?>

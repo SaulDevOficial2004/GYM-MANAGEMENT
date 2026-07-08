@@ -146,3 +146,26 @@ $(document).on('click', '.deleteBtn', async function(){
         console.log(error);
     }
 });
+
+
+$(document).on('click', '.toggleFolioBtn', function(){
+
+        let id = $(this).data('id');
+        let folio = $(this).data('folio');
+        let span = $('#folio-' + id);
+
+        if(span.text() === '**********'){
+
+            span.text(folio);
+
+            $(this).html('<i class="fas fa-eye-slash"></i>');
+
+        }else{
+
+            span.text('**********');
+
+            $(this).html('<i class="fas fa-eye"></i>');
+
+        }
+    }
+);

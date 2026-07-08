@@ -1,5 +1,5 @@
 <?php
-
+//SESION
 session_start();
 
 if(isset($_SESSION['telefono'])){
@@ -9,7 +9,88 @@ if(isset($_SESSION['telefono'])){
 
     require_once 'php_action/conn_db.php';
 
-    $sql = "SELECT * FROM administradores WHERE telefono = ?";
+    //COMPROBANTES PENDIENTES
+
+    $sqlComprobantes="
+
+            SELECT
+                cp.*,
+                p.nombre,
+                p.fecha_ini,
+                p.fecha_fin,
+                p.membresia_id,
+                m.id AS membresia_id,
+                m.nombre AS membresia,
+                m.dias
+            FROM comprobantes_pago cp
+            INNER JOIN personas p
+                ON p.id = cp.persona_id
+            LEFT JOIN membresias m
+                ON m.id = p.membresia_id
+            WHERE cp.status = 'PENDIENTE'
+            ORDER BY cp.fecha_subida ASC;
+
+        ";
+
+        $resultComprobantes = $connect->query($sqlComprobantes);
+        $totalPendientes = $resultComprobantes->num_rows;
+
+        /*=====================================
+        COLOR DE LA CARD
+        =====================================*/
+
+        $cardColor = 'green';
+
+        if($totalPendientes >= 6){
+
+            $cardColor = 'red';
+
+        }else if($totalPendientes >= 1){
+
+            $cardColor = 'yellow';
+
+        }
+
+    //HISTORIAL COMPROBANTES
+
+    $sqlHistorialComprobantes = "
+
+        SELECT
+
+            cp.*,
+            p.nombre,
+            p.folio,
+            p.membresia_id,
+            u.nombre AS revisado_por_nombre
+
+        FROM comprobantes_pago cp
+        INNER JOIN personas p
+        ON p.id = cp.persona_id
+        LEFT JOIN usuarios u
+        ON u.id = cp.revisado_por
+        ORDER BY cp.fecha_subida DESC
+
+    ";
+
+    $resultHistorialComprobantes = $connect->query($sqlHistorialComprobantes);
+
+    $sqlMembresias = "
+        SELECT *
+        FROM membresias
+        WHERE activo = 1
+        ORDER BY dias ASC
+    ";
+
+    $resultMembresias = $connect->query(
+        $sqlMembresias
+    );
+
+    $sql = "
+        SELECT *
+        FROM usuarios
+        WHERE telefono = ?
+        AND activo = 1
+    ";
 
     $stmt = $connect->prepare($sql);
     $stmt->bind_param("s", $telefono);
@@ -20,16 +101,8 @@ if(isset($_SESSION['telefono'])){
     if($result->num_rows === 1){
         $row = $result->fetch_assoc();
 
-        $userInformation = '
+        $telefonoUsuario = $row['telefono'];
 
-            <tr>
-                <td>'.$row['id'].'</td>
-                <td>'.$row['nombre'].'</td>
-                <td>'.$row['apellidos'].'</td>
-                <td>'.$row['telefono'].'</td>
-            </tr>
-
-        ';
     }
 
     $stmt->close();
@@ -41,158 +114,442 @@ if(isset($_SESSION['telefono'])){
 
 }
 
+//VISITAS DE HOY
+$sql_visitas_hoy = "
+    SELECT COUNT(*) AS total
+    FROM visitas
+    WHERE DATE(fecha_visita) = CURDATE()
+";
+
+$result_visitas_hoy = $connect->query($sql_visitas_hoy);
+
+$row_visitas_hoy = $result_visitas_hoy->fetch_assoc();
+
+$total_visitas_hoy = $row_visitas_hoy['total'];
+
+//VENTAS DE HOY
+$sql_ventas_hoy = "
+    SELECT
+        IFNULL(SUM(total),0) AS total
+    FROM ventas
+    WHERE DATE(fecha_venta) = CURDATE()
+";
+
+$result_ventas_hoy = $connect->query($sql_ventas_hoy);
+$row_ventas_hoy = $result_ventas_hoy->fetch_assoc();
+$total_ventas_hoy = $row_ventas_hoy['total'];
+
+//CONFIGURACIÓN TRANSFERENCIAS
+
+$sqlConfiguracionTransferencias = "
+
+    SELECT *
+    FROM configuracion_transferencias
+    LIMIT 1
+
+";
+
+$resultConfiguracionTransferencias = $connect->query($sqlConfiguracionTransferencias);
+$configuracionTransferencias = $resultConfiguracionTransferencias->fetch_assoc();
+
 ?>
+
+<!--INICIO DE HTML-->
 
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | ProfitnessGym</title>
-    <link rel="shortcut icon" href="img/logo_pfg-removebg-preview.ico" type="image/x-icon">
 
-    <!-- Bootstrap -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
-
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet">
-
-    <!-- Toastify -->
-    <link rel="stylesheet"
-          type="text/css"
-          href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
-    <!-- SweetAlert -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!--Links del head-->
+    <?php include 'includes/head.php' ?>
 
     <!-- CSS PERSONALIZADO -->
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
 
-<!-- NAVBAR -->
-
-<nav class="navbar navbar-expand-lg navbar-custom">
-    <a class="navbar-brand d-flex align-items-center"
-       href="pagina.php">
-        <img src="img/logo_pfg-removebg-preview.png"
-             class="nav-logo">
-        <span class="brand-text">
-            ProfitnessGym
-        </span>
-    </a>
-
-    <button class="navbar-toggler"
-            type="button"
-            data-toggle="collapse"
-            data-target="#navbarNav">
-
-        <span class="navbar-toggler-icon"></span>
-
-    </button>
-
-    <div class="collapse navbar-collapse"
-         id="navbarNav">
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link active-link"
-                   href="pagina.php">
-                    <i class="fas fa-house-user"></i>
-                    Home
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="#"
-                   
-                   data-toggle="modal"
-                   data-target="#addPersonModal">
-
-                    <i class="fas fa-user-plus"></i>
-                    Agregar persona
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="personas.php">
-                    <i class="fas fa-users"></i>
-                    Personas
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="inactivos.php">
-                    <i class="fas fa-ban"></i>
-                    Inhabilitados
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
+<!--Navbar general-->
+<?php include 'includes/navbar.php' ?>
 
 <!-- CONTENIDO -->
-
 <div class="container-fluid dashboard-container">
+    <div class="dashboard-grid">
 
-    <!-- BIENVENIDA -->
+        <!-- BIENVENIDA AL USUARIO-->
+        <div class="card-custom user-card">
+            <div class="welcome-header">
+                <div>
+                    <h1 class="welcome-title">
 
-    <div class="card-custom">
-        <div class="welcome-header">
-            <div>
-                <h1 class="welcome-title">
+                        ¡Hola <?php echo $nombre; ?>!
 
-                    ¡Hola <?php echo $nombre; ?>!
+                    </h1>
+                    <p class="welcome-subtitle">
 
+                        Bienvenido nuevamente al sistema administrativo.
+
+                    </p>
+                    <div class="user-badge">
+
+                        <i class="fas fa-user-circle"></i>
+
+                        <?php echo $nombre; ?>
+
+                    </div>
+                </div>
+
+                <div class="welcome-right">
+                    <a href="php_action/logout.php" class="btn btn-logout">
+                        <i class="fas fa-right-from-bracket"></i>
+
+                        Salir
+
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!--VENTAS Y VISITAS DEL DIA-->
+        <div class="dashboard-bottom">
+
+            <!--Ventas del dia-->
+            <div class="card-custom">
+
+                <h3>Ventas del día</h3>
+
+                <h1 class="dashboard-number">
+                    $<?php echo number_format(
+                        $total_ventas_hoy,
+                        2
+                    ); ?>
                 </h1>
-                <p class="welcome-subtitle">
 
-                    Bienvenido nuevamente al sistema administrativo.
-
+                <p>
+                    Ingresos generados hoy
                 </p>
+
+                <div class="dashboard-actions">
+
+                    <button
+                        class="btn-dashboard-action"
+                        data-toggle="modal"
+                        data-target="#sellProductDashboardModal">
+
+                        <i class="fas fa-box-open"></i>
+                        Vender Producto
+
+                    </button>
+
+                    <button
+                        class="btn-dashboard-action"
+                        data-toggle="modal"
+                        data-target="#rentTowelModal">
+
+                        <i class="fas fa-tshirt"></i>
+                        Rentar Toalla
+
+                    </button>
+
+                    <a
+                        href="reportes.php"
+                        class="btn-dashboard-action">
+
+                        <i class="fas fa-chart-line"></i>
+                        Reportes
+
+                    </a>
+
+                </div>
+
             </div>
 
-            <div class="welcome-icon">
-                <i class="fa-solid fa-dumbbell"></i>
+            <!--Visitas totales-->
+            <div class="card-custom visits-card">
+                <h3>Visitas Hoy</h3>
+                <h1 class="dashboard-number">
+                    <?php echo $total_visitas_hoy; ?>
+                </h1>
+                <p>
+                    Visitantes registrados hoy
+                </p>
+                <div class="visits-actions">
+                    <button
+                        type="button"
+                        class="btn btn-primary-action"
+                        data-toggle="modal"
+                        data-target="#newVisitModal">
+
+                        <i class="fas fa-plus"></i>
+
+                        Nueva visita
+                    </button>
+
+                    <a href="visitantes.php" class="btn btn-secondary-action">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        Historial
+                    </a>
+                </div>
             </div>
         </div>
-
-        <div class="table-responsive mt-4">
-            <table class="table custom-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Apellidos</th>
-                        <th>Teléfono</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                    <?php echo $userInformation; ?>
-
-                </tbody>
-            </table>
-        </div>
-
-        <a href="php_action/logout.php"
-           class="btn btn-logout">
-            <i class="fas fa-right-from-bracket"></i>
-            Cerrar sesión
-
-        </a>
     </div>
 
-    <!-- MEMBRESIAS -->
+    <!--COMPROBANTES PENDIENTES-->
+    <div class="card-custom pending-card <?php echo $cardColor; ?>">
+
+        <div class="pending-header">
+
+            <div>
+
+                <h2>
+
+                    <i class="fas fa-file-invoice-dollar"></i>
+
+                    Comprobantes Pendientes
+
+                </h2>
+
+                <p>
+
+                    Esperando revisión.
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <h1>
+
+                    <?php echo $totalPendientes; ?>
+
+                </h1>
+
+            </div>
+
+        </div>
+
+        <div class="pending-actions">
+
+            <button
+                class="btn-dashboard-action"
+                id="showPendingPayments">
+
+                <i class="fas fa-eye"></i>
+
+                Ver comprobantes
+
+            </button>
+
+            <button
+                class="btn-dashboard-action"
+
+                data-toggle="modal"
+
+                data-target="#paymentHistoryModal">
+
+                <i class="fas fa-clock-rotate-left"></i>
+
+                Historial
+
+            </button>
+
+            <button
+                class="btn-dashboard-action"
+                data-toggle="modal"
+                data-target="#transferSettingsModal">
+
+                <i class="fas fa-gear"></i>
+
+                Configurar Cuenta de Transferencias
+
+            </button>
+
+        </div>
+
+    </div>
+
+    <!--MOSTRAR PENDIENTES-->
+    <div
+        id="pendingPaymentsContainer"
+        style="display:none;">
+
+        <div class="pending-grid">
+
+        <?php
+
+        if($totalPendientes > 0){
+
+            while($row = $resultComprobantes->fetch_assoc()){
+
+                ?>
+
+                <div class="card-custom payment-card">
+
+                    <div class="payment-top">
+
+                        <div>
+
+                            <h4>
+
+                                <?php
+                                echo $row['nombre'];
+                                ?>
+
+                            </h4>
+
+                            <small>
+
+                                <?php
+                                echo $row['folio_cliente'];
+                                ?>
+
+                            </small>
+
+                        </div>
+
+                        <span class="status-pending">
+
+                            Pendiente
+
+                        </span>
+
+                    </div>
+
+                    <div class="payment-body">
+
+                        <p>
+
+                            <strong>
+
+                                Membresía
+
+                            </strong>
+
+                            <br>
+
+                            <?php
+                            echo $row['membresia'];
+                            ?>
+
+                        </p>
+
+                        <p>
+
+                            <strong>
+
+                                Concepto
+
+                            </strong>
+
+                            <br>
+
+                            <?php
+
+                            echo !empty($row['concepto'])
+
+                            ?
+
+                            $row['concepto']
+
+                            :
+
+                            'Sin concepto';
+
+                            ?>
+
+                        </p>
+
+                        <p>
+
+                            <strong>
+
+                                Fecha
+
+                            </strong>
+
+                            <br>
+
+                            <?php
+
+                            echo date(
+
+                                'd/m/Y H:i',
+
+                                strtotime(
+                                    $row['fecha_subida']
+                                )
+
+                            );
+
+                            ?>
+
+                        </p>
+
+                    </div>
+
+                    <button
+
+                        class="btn-dashboard-action viewPaymentBtn"
+                        data-id="<?php echo $row['id']; ?>"
+                        data-persona="<?php echo $row['persona_id']; ?>"
+                        data-nombre="<?php echo htmlspecialchars($row['nombre']); ?>"
+                        data-folio="<?php echo $row['folio_cliente']; ?>"
+                        data-membresia="<?php echo htmlspecialchars($row['membresia']); ?>"
+                        data-dias="<?php echo $row['dias']; ?>"
+                        data-concepto="<?php echo htmlspecialchars($row['concepto']); ?>"
+                        data-status="<?php echo $row['status']; ?>"
+                        data-fecha="<?php echo $row['fecha_subida']; ?>"
+                        data-archivo="<?php echo $row['archivo']; ?>">
+
+                            <i class="fas fa-eye"></i>
+
+                            Ver comprobante
+
+                    </button>
+
+                </div>
+
+                <?php
+
+            }
+
+        }else{
+
+            ?>
+
+            <div class="card-custom">
+
+                <div class="text-center py-4">
+
+                    <i
+                        class="fas fa-check-circle"
+                        style="font-size:60px;color:#28a745;">
+
+                    </i>
+
+                    <h4 class="mt-3">
+
+                        No hay comprobantes pendientes.
+
+                    </h4>
+
+                </div>
+
+            </div>
+
+            <?php
+
+        }
+
+        ?>
+
+        </div>
+
+    </div>
+
+    <!-- MEMBRESIAS VENCIDAS -->
 
     <?php
 
@@ -265,18 +622,22 @@ if(isset($_SESSION['telefono'])){
                         </td>
 
                         <td>
-                            <span class="status-expired">
 
-                                Vencido
+                            <div class="status-actions">
 
-                            </span>
+                                <span class="status-expired">
 
-                            <a href="del_ven.php?id='.$row['id'].'"
-                               class="btn btn-delete">
+                                    Vencido
 
-                                <i class="fas fa-trash"></i>
+                                </span>
 
-                            </a>
+                                    <a href="#" class="btn btn-delete disableMemberBtn" data-id="'.$row['id'].'">
+
+                                        <i class="fas fa-trash"></i>
+
+                                    </a>
+
+                            </div>
                         </td>
                     </tr>
                     ';
@@ -339,25 +700,26 @@ if(isset($_SESSION['telefono'])){
 
                         <label>Duración</label>
 
-                        <select name="fechas"
-                                id="duracion"
-                                class="form-control modern-input">
+                        <select
+                            id="persona_membresia_edit"
+                            class="form-control modern-input"
+                            required>
 
                             <option value="">
-                                Seleccione una opción
+                                Seleccione membresía
                             </option>
 
-                            <option value="7">
-                                1 Semana
-                            </option>
+                            <?php while($membresia = $resultMembresias->fetch_assoc()){ ?>
 
-                            <option value="14">
-                                2 Semanas
-                            </option>
+                                <option
+                                    value="<?php echo $membresia['id']; ?>"
+                                    data-dias="<?php echo $membresia['dias']; ?>">
 
-                            <option value="30">
-                                1 Mes
-                            </option>
+                                    <?php echo $membresia['nombre']; ?>
+
+                                </option>
+
+                            <?php } ?>
 
                         </select>
 
@@ -417,121 +779,87 @@ if(isset($_SESSION['telefono'])){
 </div>
 
 <!-- MODAL AGREGAR PERSONA -->
+<?php include 'includes/modals/add_person_modal.php' ?>
 
-<div class="modal fade"
-     id="addPersonModal"
-     tabindex="-1">
+<!-- MODAL NUEVA VISITA -->
 
+<div class="modal fade" id="newVisitModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content custom-modal">
             <div class="modal-header border-0">
                 <h4 class="modal-title">
 
-                    <i class="fas fa-user-plus"></i>
-                    Registrar Persona
+                    Nueva Visita
 
                 </h4>
-
-                <button type="button"
-                        class="close"
-                        data-dismiss="modal">
+                <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal">
 
                     <span>&times;</span>
 
                 </button>
-
             </div>
 
-            <form id="createPersonForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Buscar visitante</label>
+                    <input
+                        type="text"
+                        id="searchVisitante"
+                        class="form-control modern-input"
+                        placeholder="Escriba un nombre">
+                </div>
+
+                <div id="visitantesResults">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR VISITANTE -->
+
+<div class="modal fade" id="createVisitanteModal" tabindex="-1">
+   <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal">
+            <div class="modal-header border-0">
+                <h4 class="modal-title">
+
+                    Crear Visitante
+
+                </h4>
+                <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal">
+
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <form id="createVisitanteForm">
                 <div class="modal-body">
                     <div class="form-group">
+                        <label>Nombre</label>
 
-                        <label>Nombre completo</label>
-
-                        <input type="text"
-                               id="nombre"
-                               class="form-control modern-input"
-                               placeholder="Ingrese nombre completo"
-                               required>
-
-                    </div>
-
-                    <div class="form-group">
-                        
-                        <label>Folio</label>
-
-                        <input type="number"
-                               id="folio"
-                               class="form-control modern-input"
-                               placeholder="Ingrese folio"
-                               required>
+                        <input
+                            type="text"
+                            id="visitante_nombre"
+                            class="form-control modern-input"
+                            required>
 
                     </div>
-
-                    <div class="form-group">
-
-                        <label>Duración</label>
-
-                        <select id="duracionPersonas"
-                                class="form-control modern-input">
-
-                            <option value="">
-                                Seleccione duración
-                            </option>
-
-                            <option value="7">
-                                1 Semana
-                            </option>
-
-                            <option value="14">
-                                2 Semanas
-                            </option>
-
-                            <option value="30">
-                                1 Mes
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label>Fecha inicio</label>
-
-                        <input type="date"
-                               id="fecha_ini_persona"
-                               class="form-control modern-input"
-                               required>
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label>Fecha vencimiento</label>
-
-                        <input type="date"
-                               id="fecha_fin_persona"
-                               class="form-control modern-input"
-                               required>
-
-                    </div>
-
                 </div>
 
                 <div class="modal-footer border-0">
+                    <button
+                        type="submit"
+                        class="btn btn-save">
 
-                    <button type="reset"
-                            class="btn btn-cancel">
-
-                        Limpiar
-
-                    </button>
-
-                    <button type="submit"
-                            class="btn btn-save">
-
-                        Registrar
+                        Guardar
 
                     </button>
                 </div>
@@ -540,21 +868,807 @@ if(isset($_SESSION['telefono'])){
     </div>
 </div>
 
-<!-- JS -->
+<!-- MODAL CANTIDAD PRODUCTO -->
 
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<div class="modal fade"
+     id="sellProductQuantityModal"
+     tabindex="-1">
 
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <div class="modal-dialog modal-dialog-centered">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="modal-content custom-modal">
 
-<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+            <div class="modal-header border-0">
+
+                <h4 class="modal-title">
+
+                    Confirmar Venta
+
+                </h4>
+
+            </div>
+
+            <form id="sellProductDashboardForm">
+
+                <input
+                    type="hidden"
+                    id="dashboard_producto_id">
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+
+                        <label>Producto</label>
+
+                        <input
+                            type="text"
+                            id="dashboard_producto_nombre"
+                            class="form-control modern-input"
+                            readonly>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>Stock Disponible</label>
+
+                        <input
+                            type="text"
+                            id="dashboard_producto_stock"
+                            class="form-control modern-input"
+                            readonly>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>Cantidad</label>
+
+                        <input
+                            type="number"
+                            id="dashboard_producto_cantidad"
+                            min="1"
+                            value="1"
+                            class="form-control modern-input">
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button
+                        type="submit"
+                        class="btn btn-save">
+
+                        Vender
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL VENDER PRODUCTO DASHBOARD -->
+
+<div class="modal fade"
+     id="sellProductDashboardModal"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content custom-modal">
+
+            <div class="modal-header border-0">
+
+                <h4 class="modal-title">
+
+                    Vender Producto
+
+                </h4>
+
+                <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div class="form-group">
+
+                    <label>Buscar producto</label>
+
+                    <input
+                        type="text"
+                        id="searchProductDashboard"
+                        class="form-control modern-input"
+                        placeholder="Escriba un producto">
+
+                </div>
+
+                <div id="productsResults">
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL RENTAR TOALLA -->
+
+<div class="modal fade"
+     id="rentTowelModal"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content custom-modal">
+
+            <div class="modal-header border-0">
+
+                <h4 class="modal-title">
+
+                    Rentar Toalla
+
+                </h4>
+
+                <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+
+            </div>
+
+            <form id="rentTowelForm">
+
+                <div class="modal-body">
+
+                    <div class="alert alert-info">
+
+                        Precio de renta:
+                        <strong>$25.00</strong>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button
+                        type="button"
+                        class="btn btn-cancel"
+                        data-dismiss="modal">
+
+                        Cancelar
+
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-save">
+
+                        Registrar renta
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="modal fade" id="paymentReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content custom-modal">
+            <div class="modal-header border-0">
+                <h3>
+
+                    <i class="fas fa-file-invoice-dollar"></i>
+
+                    Revisión de Comprobante
+
+                </h3>
+
+                <button
+                class="close"
+                data-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+            </div>
+
+            <input
+                type="hidden"
+                id="reviewComprobanteId">
+
+            <div class="modal-body">
+                <div class="review-grid">
+                    <div>
+
+                        <img
+                            id="adminPreviewImage"
+                            class="img-fluid rounded d-none">
+
+                        <iframe
+                            id="adminPreviewPdf"
+                            class="d-none"
+                            style="
+                            width:100%;
+                            height:600px;
+                            border:none;
+                            ">
+
+                        </iframe>
+                    </div>
+
+                    <div>
+
+                        <h4 id="reviewNombre"></h4>
+
+                        <hr>
+
+                        <p>
+
+                            <strong>
+
+                                Folio
+
+                            </strong>
+
+                            <br>
+
+                            <span id="reviewFolio"></span>
+
+                        </p>
+
+                        <p>
+                            <strong>
+
+                                Membresía
+
+                            </strong>
+                        </p>
+
+                        <select
+                            id="reviewMembership"
+                            class="form-control modern-input">
+
+                                <?php
+
+                                $sqlMembresias = "
+
+                                    SELECT *
+                                    FROM membresias
+                                    WHERE activo = 1
+                                    ORDER BY dias ASC
+
+                                ";
+
+                                $resultMembresias = $connect->query($sqlMembresias);
+
+                                while($m = $resultMembresias->fetch_assoc()){
+
+                                    $precio = $m['precio'];
+
+                                    if($m['promocion'] == 1 && !empty($m['precio_promocion'])){
+
+                                        $precio = $m['precio_promocion'];
+
+                                    }
+
+                                ?>
+
+                                    <option
+                                        value="<?php echo $m['id']; ?>">
+
+                                        <?php
+
+                                        echo $m['nombre'] . " - $" . number_format($precio, 2);
+
+                                        ?>
+
+                                    </option>
+
+                                    <?php
+
+                                    }
+
+                                    ?>
+
+                        </select>
+
+                        <p>
+
+                            <strong>
+
+                                Concepto
+
+                            </strong>
+
+                            <br>
+
+                            <span id="reviewConcepto"></span>
+
+                        </p>
+
+                        <p>
+
+                            <strong>
+
+                                Fecha
+
+                            </strong>
+
+                            <br>
+
+                            <span id="reviewFecha"></span>
+
+                        </p>
+
+                        <p>
+
+                            <strong>
+
+                                Estado
+
+                            </strong>
+
+                            <br>
+
+                            <span
+                            id="reviewStatus"
+                            class="status-pending">
+
+                                Pendiente
+
+                            </span>
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-0">
+
+                <button
+                class="btn btn-cancel"
+                data-dismiss="modal">
+                    Cerrar
+
+                </button>
+
+                <button
+                id="rejectPaymentBtn"
+                class="btn btn-delete">
+
+                    Rechazar
+
+                </button>
+
+                <button
+                id="confirmPaymentBtn"
+                class="btn btn-save">
+
+                    Confirmar Pago
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- HISTORIAL COMPROBANTES -->
+
+<div class="modal fade" id="paymentHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content custom-modal">
+            <div class="modal-header border-0">
+
+                <h3>
+
+                    <i class="fas fa-clock-rotate-left"></i>
+
+                    Historial de Comprobantes
+
+                </h3>
+
+                <button
+                    type="button"
+                    class="close"
+                    data-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+
+            </div>
+
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table custom-table">
+                            <thead>
+
+                                <tr>
+
+                                    <th>Cliente</th>
+                                    <th>Folio</th>
+                                    <th>Estado</th>
+                                    <th>Fecha</th>
+                                    <th>Revisó</th>
+                                    <th>Acción</th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                            <?php
+
+                            while($row = $resultHistorialComprobantes->fetch_assoc()){
+
+                                $status='';
+
+                                    switch($row['status']){
+
+                                        case 'PENDIENTE':
+
+                                    $status="<span class='status-pending'>Pendiente</span>";
+
+                                    break;
+
+                                        case 'CONFIRMADO':
+
+                                    $status="<span class='status-confirmed'>Confirmado</span>";
+
+                                    break;
+
+                                        case 'RECHAZADO':
+
+                                    $status="<span class='status-rejected'>Rechazado</span>";
+
+                                    break;
+
+                            }
+
+                            ?>
+
+                                <tr>
+
+                                    <td><?php echo $row['nombre']; ?></td>
+                                    <td><?php echo $row['folio_cliente']; ?></td>
+                                    <td><?php echo $status; ?></td>
+                                    <td><?php echo date('d/m/Y H:i', strtotime($row['fecha_subida'])); ?></td>
+                                    <td><?php echo $row['revisado_por_nombre'] ?? 'Pendiente'; ?></td>
+
+                                    <td>
+
+                                        <button
+                                        class="btn btn-dashboard-action viewHistoryPaymentBtn"
+                                        data-id="<?php echo $row['id']; ?>"
+                                        data-persona="<?php echo $row['persona_id']; ?>"
+                                        data-nombre="<?php echo htmlspecialchars($row['nombre']); ?>"
+                                        data-folio="<?php echo $row['folio_cliente']; ?>"
+                                        data-membresiaid="<?php echo $row['membresia_id']; ?>"
+                                        data-concepto="<?php echo htmlspecialchars($row['concepto']); ?>"
+                                        data-status="<?php echo $row['status']; ?>"
+                                        data-fecha="<?php echo $row['fecha_subida']; ?>"
+                                        data-archivo="<?php echo $row['archivo']; ?>"
+                                        data-motivo="<?php echo htmlspecialchars($row['motivo_rechazo']); ?>">
+
+                                            <i class="fas fa-eye"></i>
+
+                                            Ver
+
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                                <?php
+
+                                }
+
+                                ?>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button
+                    class="btn btn-cancel"
+                    data-dismiss="modal">
+
+                        Cerrar
+
+                    </button>
+
+                </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="modal fade" id="paymentHistoryViewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content custom-modal">
+            <div class="modal-header border-0">
+
+                <h3>
+
+                    Ver comprobante
+
+                </h3>
+
+                <button
+                class="close"
+                data-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+                <div class="review-grid">
+                    <div>
+                        <img
+                        id="historyPreviewImage"
+                        class="img-fluid rounded d-none">
+
+                        <iframe
+                        id="historyPreviewPdf"
+                        class="d-none"
+                        style="width:100%;height:600px;border:none;">
+                        </iframe>
+                    </div>
+
+                    <div>
+
+                        <h4 id="historyNombre"></h4>
+
+                        <hr>
+
+                        <p>
+
+                            <strong>Folio</strong>
+
+                            <br>
+
+                            <span id="historyFolio"></span>
+
+                        </p>
+
+                        <p>
+
+                            <strong>Concepto</strong>
+
+                            <br>
+
+                            <span id="historyConcepto"></span>
+
+                        </p>
+
+                            <p>
+
+                            <strong>Fecha</strong>
+
+                            <br>
+
+                            <span id="historyFecha"></span>
+
+                        </p>
+
+                        <p>
+
+                            <strong>Estado</strong>
+
+                            <br>
+
+                            <span id="historyEstado"></span>
+
+                        </p>
+
+                        <p id="historyMotivoContainer" class="d-none">
+
+                            <strong>Motivo</strong>
+
+                            <br>
+
+                            <span id="historyMotivo"></span>
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer border-0">
+
+                <button
+                class="btn btn-cancel"
+                data-dismiss="modal">
+
+                    Cerrar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL CONFIGURACIÓN TRANSFERENCIAS -->
+
+<div class="modal fade"
+     id="transferSettingsModal"
+     tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content custom-modal">
+
+            <div class="modal-header border-0">
+
+                <h4 class="modal-title">
+
+                    <i class="fas fa-university"></i>
+
+                    Configuración Bancaria
+
+                </h4>
+
+                <button
+                    class="close"
+                    data-dismiss="modal">
+
+                    <span>&times;</span>
+
+                </button>
+
+            </div>
+
+            <form id="transferSettingsForm">
+
+                <input
+                    type="hidden"
+                    id="transfer_config_id"
+                    value="<?php echo $configuracionTransferencias['id']; ?>">
+
+                <div class="modal-body">
+
+                    <div class="form-group">
+
+                        <label>
+
+                            Banco
+
+                        </label>
+
+                        <input
+                            type="text"
+                            id="transfer_banco"
+                            class="form-control modern-input"
+                            value="<?php echo htmlspecialchars($configuracionTransferencias['banco']); ?>">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+
+                            Titular
+
+                        </label>
+
+                        <input
+                            type="text"
+                            id="transfer_titular"
+                            class="form-control modern-input"
+                            value="<?php echo htmlspecialchars($configuracionTransferencias['titular']); ?>">
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label>
+
+                            CLABE
+
+                        </label>
+
+                        <input
+                            type="text"
+                            id="transfer_clabe"
+                            class="form-control modern-input"
+                            value="<?php echo htmlspecialchars($configuracionTransferencias['clabe']); ?>">
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer border-0">
+
+                    <button
+                        type="button"
+                        class="btn btn-cancel"
+                        data-dismiss="modal">
+
+                        Cancelar
+
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn btn-save">
+
+                        Guardar
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!--Footer-->
+<?php include 'includes/footer.php' ?>
 
 <!--SCRIPTS JS-->
 <script src="js/alerts.js"></script>
 <script src="js/dashboard.js"></script>
-<!--Funcionalidades-->
+<script src="js/personas/add_person.js"></script>
 
+<!--Funcionalidades-->
 <?php if(isset($_GET['success'])): ?>
 
 <script>

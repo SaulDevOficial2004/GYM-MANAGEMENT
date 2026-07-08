@@ -1,0 +1,27 @@
+# Local database connection
+php_action/conn_db.php
+
+# Uploaded files
+uploads/**
+
+# Keep folders
+!uploads/.gitkeep
+!uploads/coaches/.gitkeep
+!uploads/comprobantes/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# Dependencies
+vendor/
+node_modules/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+
+# macOS
+.DS_Store

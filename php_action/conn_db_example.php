@@ -1,9 +1,9 @@
 <?php
 //Configuramos la conexion a la base de datos
 $localhost = "localhost";
-$username = "YOUR_NAME";
-$password = "YOUR_PASSWORD";
-$dbname = "YOUR_DB_NAME";
+$username = "your_username";
+$password = "your_password";
+$dbname = "profitnessgym";
 
 //Hacemos el pase de caracteres en formato utf8 para la codificacion de los mismos
 

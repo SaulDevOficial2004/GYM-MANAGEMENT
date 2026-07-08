@@ -1,39 +1,351 @@
-# ProFitnessGym
+# ProFitnessGym v1
 
-Sistema de administración para gimnasios.
+Complete Gym Management System built with PHP, MySQL, JavaScript and Bootstrap.
 
-## Funcionalidades
+---
 
-- Login de usuarios
-- Gestion de personas
-- Registro de membresías
-- Actualización de membresías
-- Búsqueda de clientes
-- Inhabilitación y reactivación de clientes
-- Consulta pública de estatus
+## Overview
 
-## Tecnologías
+ProFitnessGym is a web-based management system designed to streamline the daily operations of a gym.
 
-- PHP
+The application centralizes client management, memberships, visitors, inventory, sales, financial reports and transfer payment validation within a single administrative platform.
+
+The project was developed from scratch with a modular architecture using PHP and MySQL on the backend and JavaScript with Bootstrap on the frontend.
+
+Current status: Final testing before production deployment.
+
+---
+
+## Features
+
+### Authentication
+
+- User authentication
+- Session management
+- Role-based access control
+
+### Client Management
+
+- Register clients
+- Update client information
+- Disable clients
+- Search clients
+- Membership history
+
+### Membership Management
+
+- Create memberships
+- Update memberships
+- Automatic membership renewal
+- Automatic expiration calculation
+- Membership history
+
+### Visitor Management
+
+- Register visitors
+- Visitor history
+
+### Coaches Management
+
+- Register coaches
+- Update coaches
+- Enable and disable coaches
+
+### Products
+
+- Product management
+- Inventory control
+- Stock management
+- Product sales
+
+### Sales
+
+- Membership sales
+- Product sales
+- Visitor payments
+- Towel rentals
+
+### Reports
+
+- Daily reports
+- Monthly reports
+- Annual reports
+- Sales history
+
+### Transfer Payment Module
+
+- Client transfer portal
+- Payment receipt upload
+- Payment receipt validation
+- Payment approval
+- Payment rejection
+- Payment history
+- Bank account configuration
+
+---
+
+## Technologies
+
+### Backend
+
+- PHP 8
 - MySQL
-- JavaScript
-- Bootstrap 4
+- MySQLi
+- REST-style APIs
+- PHP Sessions
+
+### Frontend
+
+- HTML5
+- CSS3
+- Bootstrap
+- JavaScript (ES6+)
+- Fetch API
+- AJAX
+
+### Libraries
+
 - SweetAlert2
-- Toastify
+- Toastify.js
+- Font Awesome
 
-## Configuración de Base de Datos
+### Database
 
-1. Copiar:
+- MySQL
+- Foreign Keys
+- Prepared Statements
+- Transactions
+- INNER JOIN
+- LEFT JOIN
 
+### Version Control
+
+- Git
+- GitHub
+
+---
+
+## System Architecture
+
+```
+Browser
+        │
+        ▼
+HTML + CSS + JavaScript
+        │
+    Fetch API
+        │
+        ▼
+PHP APIs
+        │
+      MySQLi
+        │
+        ▼
+MySQL Database
+```
+
+---
+
+## Screenshots
+
+### Login
+
+![](screenshots/01-login.png)
+
+---
+
+### Dashboard
+
+![](screenshots/02-dashboard-overview.png)
+
+![](screenshots/03-dashboard-product-sale.png)
+
+![](screenshots/04-dashboard-towel-rental.png)
+
+![](screenshots/05-dashboard-new-visit.png)
+
+![](screenshots/06-dashboard-bank-settings.png)
+
+![](screenshots/07-dashboard-reports.png)
+
+![](screenshots/08-dashboard-membership-renewal.png)
+
+![](screenshots/09-dashboard-disable-member.png)
+
+---
+
+### Clients
+
+![](screenshots/10-persons.png)
+
+![](screenshots/11-persons-create.png)
+
+---
+
+### Visitors
+
+![](screenshots/12-visitors.png)
+
+---
+
+### Inactive Members
+
+![](screenshots/13-inactive-members.png)
+
+---
+
+### Coaches
+
+![](screenshots/14-coaches.png)
+
+![](screenshots/15-coaches-create.png)
+
+---
+
+### Memberships
+
+![](screenshots/16-memberships.png)
+
+![](screenshots/17-memberships-create.png)
+
+---
+
+### Products
+
+![](screenshots/18-products.png)
+
+![](screenshots/19-products-create.png)
+
+---
+
+### Reports
+
+![](screenshots/20-reports.png)
+
+![](screenshots/21-reports-history.png)
+
+---
+
+### Client Transfer Portal
+
+![](screenshots/22-clients-transfer-portal.png)
+
+---
+
+### Upload Payment Receipt
+
+![](screenshots/23-upload-payment-receipt.png)
+
+---
+
+### Payment Review
+
+![](screenshots/24-payment-review.png)
+
+![](screenshots/25-payment-review-modal.png)
+
+---
+
+### Client Payment History
+
+![](screenshots/26-dashboard-recept-client.png)
+
+![](screenshots/27-payment-history.png)
+
+---
+
+## Project Structure
+
+```
+api/
+css/
+database/
+docs/
+img/
+includes/
+js/
+php_action/
+screenshots/
+uploads/
+```
+
+---
+
+## Main API Endpoints
+
+- Login
+- Create Client
+- Update Membership
+- Register Visitor
+- Product Sales
+- Upload Payment Receipt
+- Confirm Payment Receipt
+- Reject Payment Receipt
+- Dashboard
+- Reports
+
+---
+
+## Installation
+
+Clone the repository.
+
+```bash
+git clone https://github.com/SaulDevOficial2004/ProFitnessGym-v1.git
+```
+
+Import the database located in:
+
+```
+database/profitnessgym.sql
+```
+
+Rename:
+
+```
 php_action/conn_db_example.php
+```
 
-2. Renombrar a:
+to
 
+```
 php_action/conn_db.php
+```
 
-3. Configurar credenciales de MySQL:
+Configure your database credentials and run the project using Apache and MySQL.
 
-$localhost
-$username
-$password
-$dbname
+---
+
+## Current Status
+
+Completed modules:
+
+- Authentication
+- Dashboard
+- Client Management
+- Membership Management
+- Visitor Management
+- Coaches Management
+- Product Management
+- Inventory
+- Sales
+- Reports
+- Transfer Payments
+- Payment Validation
+- Administrative Configuration
+
+Project status:
+
+Ready for production testing.
+
+---
+
+## Author
+
+Saúl de Jesús San Martín Martínez
+
+Software Developer
+
+GitHub
+
+https://github.com/SaulDevOficial2004

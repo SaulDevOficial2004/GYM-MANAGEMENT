@@ -1,0 +1,52 @@
+/* MODALES */
+
+.custom-modal{
+    border:none;
+    border-radius:25px;
+    padding:15px;
+}
+
+.custom-modal .modal-title{
+    font-weight:700;
+}
+
+.client-name-box{
+    background:#f4f6f9;
+    padding:15px;
+    border-radius:14px;
+    margin-bottom:20px;
+    color:#183B6B;
+    font-weight:600;
+}
+
+.modern-input{
+    height:55px;
+    border-radius:14px;
+    border:1px solid #dfe3e8;
+    padding-left:15px;
+}
+
+.modern-input:focus{
+    border-color:#16BFFD;
+    box-shadow:0 0 0 0.15rem rgba(22,191,253,0.20);
+}
+
+.btn-save{
+    background:linear-gradient(135deg,#183B6B,#16BFFD);
+    color:white;
+    border:none;
+    border-radius:14px;
+    padding:12px 24px;
+    font-weight:600;
+}
+
+.btn-save:hover{
+    color:white;
+}
+
+.btn-cancel{
+    background:#f1f1f1;
+    border:none;
+    border-radius:14px;
+    padding:12px 24px;
+}

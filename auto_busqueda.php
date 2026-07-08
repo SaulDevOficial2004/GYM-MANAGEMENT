@@ -138,8 +138,6 @@ require_once 'php_action/conn_db.php';
 
                     <th>Nombre</th>
 
-                    <th>Folio</th>
-
                     <th>Vencimiento</th>
 
                     <th>Estatus</th>
@@ -156,11 +154,19 @@ require_once 'php_action/conn_db.php';
 
     </div>
 
+    <!-- CARDS MOVIL -->
+
+    <div
+        id="mobileResults"
+        class="d-none">
+
+    </div>
+
     <!-- BOTÓN SALIR -->
 
     <div class="text-center mt-4">
 
-        <a href="index.php"
+        <a href="inicio.php"
            class="btn-exit">
 
             <i class="fas fa-sign-out-alt"></i>

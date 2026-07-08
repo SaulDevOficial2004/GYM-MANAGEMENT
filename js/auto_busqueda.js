@@ -23,6 +23,7 @@ $('#clientSearch').on('keyup', async function(){
         $('#resultsContainer').removeClass('d-none');
 
         let html = '';
+        let mobileHtml = '';
 
         //SIN RESULTADOS
 
@@ -66,29 +67,89 @@ $('#clientSearch').on('keyup', async function(){
 
                 let fechaMostrar = fechaFin.toLocaleDateString('es-MX');
 
-                html += `
-                    <tr>
-                        <td>
+                mobileHtml += `
+
+                    <div class="membership-card">
+                        <h5>
+                            <i class="fas fa-user"></i>
+
                             ${persona.nombre}
-                        </td>
+                        </h5>
 
-                        <td>
-                            ${persona.folio}
-                        </td>
+                        <p>
+                            <i class="fas fa-calendar"></i>
 
-                        <td>
+                            <strong>Vencimiento:</strong>
+
                             ${fechaMostrar}
-                        </td>
+                        </p>
 
-                        <td>
-                            ${badge}
-                        </td>
-                    </tr>
-                `;
+                        ${badge}
+
+                    </div>
+
+                    `;
+
+                if(window.innerWidth <= 768){
+
+                    html += `
+
+                    <div class="membership-card">
+                        <h5>
+                            <i class="fas fa-user"></i>
+
+                            ${persona.nombre}
+                        </h5>
+
+                        <p>
+                            <i class="fas fa-calendar"></i>
+
+                            Vigencia:
+                            ${fechaMostrar}
+                        </p>
+
+                        ${badge}
+
+                    </div>
+
+                    `;
+
+                }else{
+
+                    html += `
+                        <tr>
+                            <td>
+                                ${persona.nombre}
+                            </td>
+
+                            <td>
+                                ${fechaMostrar}
+                            </td>
+
+                            <td>
+                                ${badge}
+                            </td>
+                        </tr>
+                    `;
+
+                }
             });
         }
 
-        $('#resultTable').html(html);
+        if(window.innerWidth <= 768){
+
+            $('#resultsContainer').addClass('d-none');
+            $('#mobileResults').removeClass('d-none');
+            $('#mobileResults').html(mobileHtml);
+
+        }else{
+
+            $('#mobileResults').addClass('d-none');
+            $('#resultsContainer').removeClass('d-none');
+            $('#resultTable').html(html);
+
+        }
+
     }catch(error){
 
         console.error(error);

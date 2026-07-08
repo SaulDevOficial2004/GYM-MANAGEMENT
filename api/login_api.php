@@ -16,8 +16,9 @@ $password = $data['password'];
 
 $sql = "
     SELECT * 
-    FROM administradores
+    FROM usuarios
     WHERE telefono = ?
+    AND activo = 1
 ";
 
 $stmt = $connect->prepare($sql);
@@ -32,6 +33,7 @@ if($result->num_rows === 1){
 
     if(password_verify($password, $row['password'])){
 
+        $_SESSION['user_id'] = $row['id'];
         $_SESSION['telefono'] = $row['telefono'];
         $_SESSION['nombre'] = $row['nombre'];
 

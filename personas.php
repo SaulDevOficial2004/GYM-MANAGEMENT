@@ -25,89 +25,18 @@ $total_personas = $rowTotal['personas'];
 <html lang="es">
 <head>
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Personas | ProfitnessGym</title>
 
-    <link rel="shortcut icon"
-          href="img/logo_pfg-removebg-preview.ico"
-          type="image/x-icon">
-
-    <!-- Bootstrap -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-
-    <!-- FontAwesome -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
+    <?php include 'includes/head.php' ?>
     <!-- CSS -->
-    <link rel="stylesheet"
-          href="css/personas.css">
-
-    <!--Toastify-->
-    <link rel="stylesheet" type="text/css"
-          href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
-    <!-- SweetAlert -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="css/personas.css">
 
 
 </head>
 
 <body>
 
-<!-- NAVBAR -->
-
-<nav class="navbar navbar-expand-lg navbar-custom">
-    <a class="navbar-brand d-flex align-items-center"
-       href="pagina.php">
-        <img src="img/logo_pfg-removebg-preview.png"
-             class="nav-logo">
-        <span class="brand-text">
-            ProfitnessGym
-        </span>
-    </a>
-
-    <button class="navbar-toggler"
-            type="button"
-            data-toggle="collapse"
-            data-target="#navbarNav">
-
-        <span class="navbar-toggler-icon"></span>
-
-    </button>
-
-    <div class="collapse navbar-collapse"
-         id="navbarNav">
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-                <a class="nav-link active-link"
-                   href="pagina.php">
-                    <i class="fas fa-house-user"></i>
-                    Home
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="personas.php">
-                    <i class="fas fa-users"></i>
-                    Personas
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link"
-                   href="inactivos.php">
-                    <i class="fas fa-ban"></i>
-                    Inhabilitados
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
+<?php include 'includes/navbar.php' ?>
 
 <!-- CONTENIDO -->
 
@@ -247,7 +176,27 @@ $total_personas = $rowTotal['personas'];
 
                         <td>{$row['nombre']}</td>
 
-                        <td>{$row['folio']}</td>
+                        <td>
+
+                            <span
+                                id='folio-{$row['id']}'
+                                class='folio-hidden'>
+
+                                **********
+
+                            </span>
+
+                            <button
+                                type='button'
+                                class='btn btn-sm btn-link toggleFolioBtn'
+                                data-id='{$row['id']}'
+                                data-folio='{$row['folio']}'>
+
+                                <i class='fas fa-eye'></i>
+
+                            </button>
+
+                        </td>
 
                         <td>{$fechaInicio}</td>
 
@@ -320,132 +269,6 @@ $total_personas = $rowTotal['personas'];
 
 </div>
 
-
-<!-- MODAL AGREGAR PERSONA -->
-
-<div class="modal fade"
-     id="addPersonModal"
-     tabindex="-1">
-
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content custom-modal">
-            <div class="modal-header border-0">
-                <h4 class="modal-title">
-
-                    <i class="fas fa-user-plus"></i>
-                    Registrar Persona
-
-                </h4>
-
-                <button type="button"
-                        class="close"
-                        data-dismiss="modal">
-
-                    <span>&times;</span>
-
-                </button>
-
-            </div>
-
-            <form id="createPersonForm">
-                <div class="modal-body">
-                    <div class="form-group">
-
-                        <label>Nombre completo</label>
-
-                        <input type="text"
-                               id="nombre"
-                               class="form-control modern-input"
-                               placeholder="Ingrese nombre completo"
-                               required>
-
-                    </div>
-
-                    <div class="form-group">
-                        
-                        <label>Folio</label>
-
-                        <input type="number"
-                               id="folio"
-                               class="form-control modern-input"
-                               placeholder="Ingrese folio"
-                               required>
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label>Duración</label>
-
-                        <select id="duracionPersonas"
-                                class="form-control modern-input">
-
-                            <option value="">
-                                Seleccione duración
-                            </option>
-
-                            <option value="7">
-                                1 Semana
-                            </option>
-
-                            <option value="14">
-                                2 Semanas
-                            </option>
-
-                            <option value="30">
-                                1 Mes
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label>Fecha inicio</label>
-
-                        <input type="date"
-                               id="fecha_ini_persona"
-                               class="form-control modern-input"
-                               required>
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label>Fecha vencimiento</label>
-
-                        <input type="date"
-                               id="fecha_fin_persona"
-                               class="form-control modern-input"
-                               required>
-
-                    </div>
-
-                </div>
-
-                <div class="modal-footer border-0">
-
-                    <button type="reset"
-                            class="btn btn-cancel">
-
-                        Limpiar
-
-                    </button>
-
-                    <button type="submit"
-                            class="btn btn-save">
-
-                        Registrar
-
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
 <!-- MODAL EDITAR PERSONA -->
 
 <div
@@ -489,19 +312,6 @@ $total_personas = $rowTotal['personas'];
                         <input
                             type="text"
                             id="edit_nombre"
-                            class="form-control modern-input"
-                            required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="edit_folio">
-
-                            Folio
-
-                        </label>
-                        <input
-                            type="number"
-                            id="edit_folio"
                             class="form-control modern-input"
                             required>
                     </div>
@@ -565,22 +375,15 @@ $total_personas = $rowTotal['personas'];
     </div>
 </div>
 
+<?php include 'includes/modals/add_person_modal.php' ?>
 
-<!-- Bootstrap -->
-
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-
-<!--Toastify-->
-<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-
-
+<?php include 'includes/footer.php' ?>
 
 <!--Scripts funcionales-->
 <script src="js/personas.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/alerts.js"></script>
+<script src="js/personas/add_person.js"></script>
 
 </body>
 </html>

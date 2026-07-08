@@ -4,41 +4,6 @@ body{
     font-family:'Segoe UI',sans-serif;
 }
 
-/* NAVBAR */
-
-.navbar-custom{
-    background:#ffffff;
-    padding:15px 40px;
-    box-shadow:0 5px 20px rgba(0,0,0,0.05);
-}
-
-.nav-logo{
-    width:55px;
-    margin-right:12px;
-}
-
-.brand-text{
-    font-size:24px;
-    font-weight:700;
-    color:#183B6B;
-}
-
-.nav-link{
-    color:#6c757d !important;
-    font-weight:500;
-    margin-left:15px;
-    transition:0.3s ease;
-}
-
-.nav-link:hover{
-    color:#183B6B !important;
-}
-
-.active-link{
-    color:#183B6B !important;
-    font-weight:600;
-}
-
 /* =========================
    CONTENEDOR PRINCIPAL
 ========================= */
