@@ -1,6 +1,13 @@
 # Local database connection
 php_action/conn_db.php
 
+# Configuration
+config/config.php
+.env
+
+# Storage
+storage/
+
 # Uploaded files
 uploads/**
 
@@ -19,6 +26,10 @@ node_modules/
 
 # Logs
 *.log
+
+# Tooling cache
+.php-cs-fixer.cache
+.phpunit.cache/
 
 # Windows
 Thumbs.db

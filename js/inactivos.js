@@ -34,17 +34,16 @@ $(document).on('click', '.enableBtn', async function(){
 
     try{
 
-        let response = await fetch('/api/enable_person.php',{
+        let result = await apiFetch('/api/enable_person.php',{
             method: 'POST',
-            headers: {
-                'Content-Type':'application/json'
-            },
             body:JSON.stringify({
                 id:id
             })
         });
 
-        let data = await response.json();
+        if(!result) return;
+
+        let data = result.data;
 
         if(data.status === "success"){
 

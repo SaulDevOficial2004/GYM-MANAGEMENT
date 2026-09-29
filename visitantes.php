@@ -1,183 +1,336 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/includes/auth.php';
 
-if(!isset($_SESSION['telefono'])){
+requireRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
-    header('location:index.php');
-    exit();
+require_once __DIR__ . '/php_action/conn_db.php';
 
+use GMS\Repository\VisitanteRepository;
+
+$telefono = $_SESSION['telefono'];
+$nombre = $_SESSION['nombre'];
+
+$visitanteRepo = new VisitanteRepository($connect);
+
+/* RESUMEN DE VISITAS */
+
+$resumen = $visitanteRepo->resumen();
+
+$totalVisitas = (int) ($resumen['total_visitas'] ?? 0);
+$visitantesUnicos = (int) ($resumen['visitantes_unicos'] ?? 0);
+$visitasHoy = (int) ($resumen['visitas_hoy'] ?? 0);
+$visitasMes = (int) ($resumen['visitas_mes'] ?? 0);
+
+/* HISTORIAL */
+
+$paginaActual = max(1, (int) ($_GET['pagina'] ?? 1));
+$porPagina = 25;
+
+$totalPaginas = max(1, (int) ceil($visitanteRepo->contar() / $porPagina));
+
+if ($paginaActual > $totalPaginas) {
+    $paginaActual = $totalPaginas;
 }
 
-require_once 'php_action/conn_db.php';
+$visitasAgrupadas = [];
 
-$sql = "
-    SELECT
-        visitantes.id,
-        visitantes.nombre,
-        visitas.fecha_visita
-    FROM visitas
-    INNER JOIN visitantes
-    ON visitantes.id = visitas.visitante_id
-    ORDER BY visitas.fecha_visita DESC
-";
+foreach ($visitanteRepo->listarHistorial($porPagina, ($paginaActual - 1) * $porPagina) as $visita) {
+        $fechaGrupo = date(
+            'Y-m-d',
+            strtotime(
+                $visita['fecha_visita']
+            )
+        );
 
-$result = $connect->query($sql);
+        if (!isset($visitasAgrupadas[$fechaGrupo])) {
+            $visitasAgrupadas[$fechaGrupo] = [];
+        }
+
+        $visitasAgrupadas[$fechaGrupo][] = $visita;
+}
 
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-
-    <title>
-        Visitantes | ProfitnessGym
-    </title>
-
+    <title>Visitantes | GMS</title>
     <?php include 'includes/head.php'; ?>
-
-    <link rel="stylesheet"
-          href="css/visitantes.css">
-
+    <link rel="stylesheet" href="css/visitantes.css">
 </head>
-
 <body>
 
 <?php include 'includes/navbar.php'; ?>
 
-<!-- CONTENIDO -->
+<main class="visitors-container">
+    <header class="visitors-header">
+        <div>
+            <p class="visitors-eyebrow">Control de accesos</p>
+            <h1>Historial de visitantes</h1>
+            <p>Consulta los registros y registra nuevas visitas rápidamente.</p>
+        </div>
+        <a href="pagina.php" class="visitors-back-button">
+            <i class="fas fa-arrow-left"></i>
+            <span>Volver al Dashboard</span>
+        </a>
+    </header>
 
-<div class="container-fluid visitantes-container">
+    <section class="visitors-stats-grid">
+        <article class="visitor-stat-card stat-today">
+            <span class="visitor-stat-icon">
+                <i class="fas fa-calendar-day"></i>
+            </span>
+            <div>
+                <small>Visitas hoy</small>
+                <strong><?php echo $visitasHoy; ?></strong>
+                <p>Entradas registradas durante el día</p>
+            </div>
+        </article>
 
-    <!-- HEADER -->
+        <article class="visitor-stat-card stat-month">
+            <span class="visitor-stat-icon">
+                <i class="fas fa-calendar-days"></i>
+            </span>
+            <div>
+                <small>Visitas del mes</small>
+                <strong><?php echo $visitasMes; ?></strong>
+                <p>Entradas del mes actual</p>
+            </div>
+        </article>
 
-    <div class="page-header">
+        <article class="visitor-stat-card stat-unique">
+            <span class="visitor-stat-icon">
+                <i class="fas fa-users"></i>
+            </span>
+            <div>
+                <small>Visitantes únicos</small>
+                <strong><?php echo $visitantesUnicos; ?></strong>
+                <p>Personas registradas en el historial</p>
+            </div>
+        </article>
 
-        <h1>
+        <article class="visitor-stat-card stat-total">
+            <span class="visitor-stat-icon">
+                <i class="fas fa-clock-rotate-left"></i>
+            </span>
+            <div>
+                <small>Visitas históricas</small>
+                <strong><?php echo $totalVisitas; ?></strong>
+                <p>Total de entradas registradas</p>
+            </div>
+        </article>
+    </section>
 
-            Historial de Visitantes
+    <section class="visitors-panel">
+        <div class="visitors-toolbar">
+            <div class="visitors-toolbar-heading">
+                <h2>Registro de visitas</h2>
+                <p>Las entradas están agrupadas por fecha.</p>
+            </div>
 
-        </h1>
+            <div class="visitors-search">
+                <i class="fas fa-search"></i>
+                <input
+                    type="text"
+                    id="searchVisitantes"
+                    placeholder="Buscar visitante por nombre"
+                    autocomplete="off">
+                <button type="button" id="clearVisitorSearch" title="Limpiar búsqueda">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
 
-        <p>
+        <div class="visitors-results-summary">
+            <div>
+                <span id="visibleVisitsCount">
+                    <?php echo $totalVisitas; ?>
+                </span>
+                <small>visitas mostradas</small>
+            </div>
 
-            Registro de visitas agrupado por fecha
+            <span class="visitors-view-label">
+                <i class="fas fa-layer-group"></i>
+                Agrupadas por fecha
+            </span>
+        </div>
 
-        </p>
+        <div class="visits-timeline" id="visitasContainer">
+            <?php if (!empty($visitasAgrupadas)): ?>
+                <?php foreach ($visitasAgrupadas as $fechaGrupo => $visitas): ?>
+                    <?php
+                    $fechaObjeto = new DateTime(
+                        $fechaGrupo
+                    );
 
-    </div>
+                    $fechaTitulo = $fechaObjeto->format(
+                        'd/m/Y'
+                    );
 
-    <!-- BUSCADOR -->
+                    $esHoy = $fechaGrupo === date(
+                        'Y-m-d'
+                    );
 
-    <div class="visitas-toolbar">
+                    $esAyer = $fechaGrupo === date(
+                        'Y-m-d',
+                        strtotime('-1 day')
+                    );
 
-        <input
-            type="text"
-            id="searchVisitantes"
-            class="search-input"
-            placeholder="Buscar visitante...">
+                    $diasSemana = [
+                        1 => 'Lunes',
+                        2 => 'Martes',
+                        3 => 'Miércoles',
+                        4 => 'Jueves',
+                        5 => 'Viernes',
+                        6 => 'Sábado',
+                        7 => 'Domingo'
+                    ];
 
-    </div>
+                    if ($esHoy) {
+                        $fechaDescripcion = 'Hoy';
+                    } elseif ($esAyer) {
+                        $fechaDescripcion = 'Ayer';
+                    } else {
+                        $numeroDia = (int) $fechaObjeto->format('N');
+                        $fechaDescripcion = $diasSemana[$numeroDia];
+}
+                    ?>
 
-    <!-- HISTORIAL -->
+                    <section class="visit-date-group" data-date="<?php echo $fechaGrupo; ?>">
+                        <div class="visit-date-header">
+                            <div class="visit-date-marker">
+                                <span></span>
+                            </div>
 
-    <div id="visitasContainer">
+                            <div class="visit-date-information">
+                                <div>
+                                    <h3><?php echo $fechaDescripcion; ?></h3>
+                                    <small><?php echo $fechaTitulo; ?></small>
+                                </div>
 
-        <?php
-
-        $fecha_actual = '';
-
-        while($row = $result->fetch_assoc()){
-
-            $fecha = date(
-                "d/m/Y",
-                strtotime($row['fecha_visita'])
-            );
-
-            if($fecha_actual != $fecha){
-
-                if($fecha_actual != ''){
-
-                    echo '</div></div>';
-
-                }
-
-                echo '
-
-                <div class="visit-date-group">
-
-                    <div class="visit-date">
-
-                        '.$fecha.'
-
-                    </div>
-
-                    <div class="visit-list">
-
-                ';
-
-                $fecha_actual = $fecha;
-
-            }
-
-                echo '
-
-                <div class="visitante-card">
-
-                    <div class="visitante-info">
-
-                        <div class="visitante-nombre">
-
-                            <i class="fas fa-user"></i>
-
-                            '.$row['nombre'].'
-
+                                <span class="visit-date-counter">
+                                    <?php echo count($visitas); ?>
+                                    <?php echo count($visitas) === 1 ? 'visita' : 'visitas'; ?>
+                                </span>
+                            </div>
                         </div>
 
-                        <div class="visitante-fecha">
+                        <div class="visit-list">
+                            <?php foreach ($visitas as $visita): ?>
+                                <?php
+                                $visitanteId = (int) $visita['id'];
 
-                            '.date("d/m/Y H:i",strtotime($row['fecha_visita'])).'
+                                $nombreVisitante = htmlspecialchars(
+                                    $visita['nombre'],
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                );
 
+                                $fechaCompleta = date(
+                                    'd/m/Y H:i',
+                                    strtotime(
+                                        $visita['fecha_visita']
+                                    )
+                                );
+
+                                $horaVisita = date(
+                                    'H:i',
+                                    strtotime(
+                                        $visita['fecha_visita']
+                                    )
+                                );
+
+                                $inicial = strtoupper(
+                                    mb_substr(
+                                        $visita['nombre'],
+                                        0,
+                                        1,
+                                        'UTF-8'
+                                    )
+                                );
+                                ?>
+
+                                <article
+                                    class="visitor-crm-card"
+                                    data-search="<?php echo strtolower($nombreVisitante); ?>">
+
+                                    <div class="visitor-main-information">
+                                        <span class="visitor-avatar">
+                                            <?php echo $inicial; ?>
+                                        </span>
+
+                                        <div class="visitor-identity">
+                                            <h4><?php echo $nombreVisitante; ?></h4>
+                                            <span>
+                                                <i class="fas fa-user-check"></i>
+                                                Visitante registrado
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="visitor-visit-information">
+                                        <div class="visitor-data-item">
+                                            <span>
+                                                <i class="fas fa-clock"></i>
+                                            </span>
+
+                                            <div>
+                                                <small>Hora de entrada</small>
+                                                <strong><?php echo $horaVisita; ?></strong>
+                                            </div>
+                                        </div>
+
+                                        <div class="visitor-data-item">
+                                            <span>
+                                                <i class="fas fa-calendar-check"></i>
+                                            </span>
+
+                                            <div>
+                                                <small>Registro completo</small>
+                                                <strong><?php echo $fechaCompleta; ?></strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="visitor-register-button btn-register-visit"
+                                        data-id="<?php echo $visitanteId; ?>"
+                                        data-nombre="<?php echo $nombreVisitante; ?>">
+
+                                        <i class="fas fa-plus"></i>
+                                        <span>Registrar visita</span>
+                                    </button>
+                                </article>
+                            <?php endforeach; ?>
                         </div>
+                    </section>
+                <?php endforeach; ?>
+            <?php endif; ?>
 
-                    </div>
+            <div
+                class="visitors-empty-state <?php echo $totalVisitas > 0 ? 'd-none' : ''; ?>"
+                id="visitorsEmptyState">
 
-                    <button
-                        class="btn-register-visit"
-                        data-id="'.$row['id'].'">
+                <span>
+                    <i class="fas fa-user-clock"></i>
+                </span>
 
-                        <i class="fas fa-plus"></i>
-
-                        Registrar visita
-
-                    </button>
-
-                </div>
-
-                ';
-
-        }
-
-        if($fecha_actual != ''){
-
-            echo '</div></div>';
-
-        }
-
-        ?>
-
-    </div>
-
-</div>
-
-<?php include 'includes/modals/add_person_modal.php' ?>
+                <h3>No se encontraron visitas</h3>
+                <p>No existen registros que coincidan con la búsqueda.</p>
+            </div>
+        </div>
+        <?php include __DIR__ . '/includes/partials/paginacion.php'; ?>
+    </section>
+</main>
 
 <?php include 'includes/footer.php'; ?>
 
 <script src="js/visitantes.js"></script>
-<script src="js/personas/add_person.js"></script>
-
 </body>
 </html>
 

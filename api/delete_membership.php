@@ -1,20 +1,30 @@
 <?php
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/../includes/api_auth.php';
 
-require_once '../php_action/conn_db.php';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
+
+header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/../php_action/conn_db.php';
 
 //VALIDACIONES
 
 if(empty($_POST['id'])){
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => false,
         'message' => 'ID inválido.'
     ]);
-
-    exit();
 
 }
 
@@ -33,10 +43,9 @@ $stmt->bind_param(
     "i",
     $id
 );
-
 if($stmt->execute()){
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => true,
         'message' => 'Membresía eliminada correctamente.'
@@ -44,10 +53,11 @@ if($stmt->execute()){
 
 }else{
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => false,
         'message' => 'No fue posible eliminar la membresía.'
+
     ]);
 
 }

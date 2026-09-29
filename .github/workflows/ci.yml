@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: profitnessgym_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli, curl
+          coverage: none
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - name: Esquema + roles en BD de prueba
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot profitnessgym_test < database/profitnessgym.sql
+          mysql -h 127.0.0.1 -uroot -proot profitnessgym_test < database/migrations/001_intentos_login.sql
+          mysql -h 127.0.0.1 -uroot -proot profitnessgym_test -e "INSERT IGNORE INTO roles (id, nombre) VALUES (1, 'Administrador'), (2, 'Recepcionista'), (3, 'Dueño');"
+
+      - name: Servidor PHP contra BD de prueba
+        run: |
+          DB_NAME=profitnessgym_test APP_ENV=local nohup php -S localhost:8000 -t . >/tmp/php-server.log 2>&1 &
+          sleep 2
+
+      - run: vendor/bin/phpunit --no-coverage
+
+      - run: vendor/bin/phpstan analyse --no-progress
+
+      - run: vendor/bin/php-cs-fixer fix --dry-run --diff

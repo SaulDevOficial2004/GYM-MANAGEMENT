@@ -45,3 +45,21 @@ function updateMembership(){
         }
     }).showToast();
 }
+
+document.addEventListener('DOMContentLoaded',function(){
+    const flashes=String(
+        document.body?document.body.dataset.flash||'':''
+    ).split(',');
+
+    if(flashes.includes('loginError')){
+        loginError();
+    }
+
+    if(flashes.includes('loginSuccess')){
+        loginSuccess();
+    }
+
+    if(flashes.includes('updateMembership')){
+        updateMembership();
+    }
+});

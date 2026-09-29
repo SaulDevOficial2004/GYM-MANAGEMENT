@@ -2,18 +2,43 @@
 
 header('Content-Type: application/json');
 
-require_once '../php_action/conn_db.php';
+require_once __DIR__ . '/../includes/signed_link.php';
+require_once __DIR__ . '/../includes/rate_limit.php';
 
 $folio = trim($_POST['folio'] ?? '');
 
 if(empty($folio)){
-    echo json_encode([
+    jsonResponse([
 
         'success' => false,
         'message' => 'Ingrese un folio.'
     ]);
+}
 
-    exit();
+if(preg_match('/^CLI-[A-F0-9]{6}$/', $folio) !== 1){
+    jsonResponse([
+
+        'success' => false,
+        'message' => 'Folio no válido.'
+    ]);
+}
+
+$ipCliente = getClientIp();
+
+if (rateLimit('pub_search_folio:' . $ipCliente, 'search', 10, 60)
+    || rateLimit('pub_search_folio_hora:' . $ipCliente, 'search', 60, 3600)) {
+    jsonResponse([
+
+        'success' => false,
+        'message' => 'Demasiadas consultas. Intenta más tarde.'
+    ], 429);
+}
+
+recordLoginAttempt('pub_search_folio:' . $ipCliente, false);
+recordLoginAttempt('pub_search_folio_hora:' . $ipCliente, false);
+
+if (random_int(1, 100) === 1) {
+    pruneLoginAttempts();
 }
 
 $sql = "
@@ -39,19 +64,17 @@ $result = $stmt->get_result();
 
 if($result->num_rows > 0){
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => true,
 
-        'redirect' =>
-        'transferencias_cliente.php?folio=' .
-        urlencode($folio)
+        'redirect' => generarEnlaceCliente($folio)
 
     ]);
 
 }else{
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => false,
 

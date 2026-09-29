@@ -1,88 +1,114 @@
-//BUSCAR VISITA
-$('#searchVisitantes').on('keyup', function(){
+function filterVisitors(){
+    const searchValue=$('#searchVisitantes').val().toLowerCase().trim();
+    let visibleVisits=0;
 
-    let value = $(this).val().toLowerCase();
+    $('.visitor-crm-card').each(function(){
+        const card=$(this);
+        const searchableText=String(card.data('search')).toLowerCase();
+        const isVisible=searchableText.includes(searchValue);
 
-    $('.visitante-card').each(function(){
+        card.toggle(isVisible);
 
-        let visible = $(this)
-            .text()
-            .toLowerCase()
-            .includes(value);
-
-        $(this).toggle(visible);
-
+        if(isVisible){
+            visibleVisits++;
+        }
     });
 
     $('.visit-date-group').each(function(){
+        const group=$(this);
+        const visibleCards=group.find('.visitor-crm-card:visible').length;
 
-        let visibles = $(this)
-            .find('.visitante-card:visible')
-            .length;
-
-        $(this).toggle(visibles > 0);
-
+        group.toggle(visibleCards>0);
+        group.find('.visit-date-counter').text(
+            `${visibleCards} ${visibleCards===1?'visita':'visitas'}`
+        );
     });
 
-    // Si el buscador está vacío mostrar todo otra vez
-    if(value === ''){
+    $('#visibleVisitsCount').text(visibleVisits);
+    $('#visitorsEmptyState').toggleClass('d-none',visibleVisits>0);
+}
 
-        $('.visitante-card').show();
-        $('.visit-date-group').show();
+$('#searchVisitantes').on('input',function(){
+    filterVisitors();
+});
 
+$('#clearVisitorSearch').on('click',function(){
+    $('#searchVisitantes').val('').trigger('focus');
+    filterVisitors();
+});
+
+$(document).on('click','.btn-register-visit',async function(){
+    const button=$(this);
+    const visitanteId=button.data('id');
+    const nombre=button.data('nombre');
+    const originalContent=button.html();
+
+    const result=await Swal.fire({
+        icon:'question',
+        title:'¿Registrar nueva visita?',
+        text:`Se registrará una nueva entrada para ${nombre}.`,
+        showCancelButton:true,
+        confirmButtonText:'Registrar visita',
+        cancelButtonText:'Cancelar',
+        confirmButtonColor:'#176dd3',
+        cancelButtonColor:'#6c757d'
+    });
+
+    if(!result.isConfirmed){
+        return;
     }
 
-});
+    button.prop('disabled',true).html(
+        '<i class="fas fa-spinner fa-spin"></i><span>Registrando...</span>'
+    );
 
-//REGISTRAR VISITA
+    try{
+        const result=await apiFetch('api/create_visit.php',{
+            method:'POST',
+            body:JSON.stringify({
+                visitante_id:visitanteId
+            })
+        });
 
-$(document).on('click','.btn-register-visit',function(){
+        if(!result) return;
 
-    let visitante_id = $(this).data('id');
+        const data=result.data;
 
-    fetch('api/create_visit.php',{
-
-        method:'POST',
-
-        headers:{
-            'Content-Type':'application/json'
-        },
-
-        body:JSON.stringify({
-            visitante_id:visitante_id
-        })
-
-    })
-    .then(response => response.json())
-    .then(data => {
-
-        if(data.status === 'success'){
-
-            Toastify({
-
-                text:data.message,
-
-                duration:3000,
-
-                gravity:"top",
-
-                position:"right",
-
-                style:{
-                    background:
-                    "linear-gradient(to right,#183B6B,#16BFFD)"
-                }
-
-            }).showToast();
-
-            setTimeout(() => {
-
-                location.reload();
-
-            },1000);
-
+        if(data.status!=='success'){
+            throw new Error(
+                data.message||'No fue posible registrar la visita.'
+            );
         }
 
-    });
+        Toastify({
+            text:data.message,
+            duration:3000,
+            gravity:'top',
+            position:'right',
+            style:{
+                background:'linear-gradient(to right,#183B6B,#16BFFD)'
+            }
+        }).showToast();
 
+        button.html(
+            '<i class="fas fa-check"></i><span>Visita registrada</span>'
+        );
+
+        setTimeout(()=>{
+            location.reload();
+        },900);
+    }catch(error){
+        console.error(error);
+
+        button.prop('disabled',false).html(originalContent);
+
+        Swal.fire({
+            icon:'error',
+            title:'No se pudo registrar',
+            text:error.message||'Ocurrió un error inesperado.',
+            confirmButtonColor:'#176dd3'
+        });
+    }
 });
+
+filterVisitors();

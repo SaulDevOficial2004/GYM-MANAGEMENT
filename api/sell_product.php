@@ -1,20 +1,18 @@
 <?php
 
-session_start();
-
-header('Content-Type: application/json');
-
 require_once '../php_action/conn_db.php';
 
-if(!isset($_SESSION['telefono'])){
+require_once __DIR__ . '/../includes/api_auth.php';
 
-    echo json_encode([
-        "success" => false,
-        "message" => "Sesión expirada"
-    ]);
-
-    exit();
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
 }
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 $data = json_decode(
     file_get_contents("php://input"),
@@ -24,7 +22,9 @@ $data = json_decode(
 $producto_id = $data['producto_id'];
 $cantidad = $data['cantidad'];
 
-// PRODUCTO
+require_once __DIR__ . '/../includes/audit.php';
+
+// PRODUCTO (lectura previa sin bloqueo para mensajes iguales)
 
 $sqlProducto = "
     SELECT *
@@ -52,128 +52,160 @@ $producto =
 
 if(!$producto){
 
-    echo json_encode([
+    jsonResponse([
         "success" => false,
         "message" => "Producto no encontrado"
     ]);
-
-    exit();
 }
 
-// STOCK
+// TRANSACCION
 
-if($producto['stock'] < $cantidad){
+$connect->begin_transaction();
 
-    echo json_encode([
-        "success" => false,
-        "message" => "Stock insuficiente"
-    ]);
+try{
 
-    exit();
-}
+    // STOCK CON BLOQUEO
 
-// DESCONTAR STOCK
+    $sqlBloqueo = "
+        SELECT stock, precio, nombre
+        FROM productos
+        WHERE id = ?
+        FOR UPDATE
+    ";
 
-$nuevoStock =
-    $producto['stock'] - $cantidad;
+    $stmtBloqueo = $connect->prepare(
+        $sqlBloqueo
+    );
 
-$sqlStock = "
-    UPDATE productos
-    SET stock = ?
-    WHERE id = ?
-";
+    $stmtBloqueo->bind_param(
+        "i",
+        $producto_id
+    );
 
-$stmtStock = $connect->prepare(
-    $sqlStock
-);
+    $stmtBloqueo->execute();
 
-$stmtStock->bind_param(
-    "ii",
-    $nuevoStock,
-    $producto_id
-);
+    $resultBloqueo =
+        $stmtBloqueo->get_result();
 
-$stmtStock->execute();
+    $fila =
+        $resultBloqueo->fetch_assoc();
 
-// USUARIO
+    if(!$fila){
 
-$telefono = $_SESSION['telefono'];
+        $connect->rollback();
 
-$sqlUsuario = "
-    SELECT id
-    FROM usuarios
-    WHERE telefono = ?
-";
+        jsonResponse([
+            "success" => false,
+            "message" => "Producto no encontrado"
+        ]);
+    }
 
-$stmtUsuario = $connect->prepare(
-    $sqlUsuario
-);
+    if(!\GMS\Domain\Inventario::puedeDescontar((int) $fila['stock'], (int) $cantidad)){
 
-$stmtUsuario->bind_param(
-    "s",
-    $telefono
-);
+        $connect->rollback();
 
-$stmtUsuario->execute();
+        jsonResponse([
+            "success" => false,
+            "message" => "Stock insuficiente"
+        ]);
+    }
 
-$resultUsuario =
-    $stmtUsuario->get_result();
+    // DESCONTAR STOCK
 
-$usuario =
-    $resultUsuario->fetch_assoc();
+    $nuevoStock =
+        \GMS\Domain\Inventario::descontar((int) $fila['stock'], (int) $cantidad);
 
-$usuario_id =
-    $usuario['id'];
+    $sqlStock = "
+        UPDATE productos
+        SET stock = ?
+        WHERE id = ?
+    ";
 
-// TOTAL
+    $stmtStock = $connect->prepare(
+        $sqlStock
+    );
 
-$total =
-    $producto['precio'] * $cantidad;
+    $stmtStock->bind_param(
+        "ii",
+        $nuevoStock,
+        $producto_id
+    );
 
-// VENTA
+    $stmtStock->execute();
 
-$tipo = 'PRODUCTO';
+    // USUARIO RESPONSABLE
 
-$descripcion =
-    'Venta de ' .
-    $producto['nombre'] .
-    ' x' .
-    $cantidad;
+    $usuario_id = apiCurrentUserId();
 
-$sqlVenta = "
-    INSERT INTO ventas
-    (
-        usuario_id,
-        tipo,
-        descripcion,
-        referencia_id,
-        total
-    )
-    VALUES
-    (
-        ?, ?, ?, ?, ?
-    )
-";
+    // TOTAL
 
-$stmtVenta = $connect->prepare(
-    $sqlVenta
-);
+    $total =
+        $fila['precio'] * $cantidad;
 
-$stmtVenta->bind_param(
+    // VENTA
 
-    "issid",
+    $tipo = 'PRODUCTO';
 
-    $usuario_id,
-    $tipo,
-    $descripcion,
-    $producto_id,
-    $total
+    $descripcion =
+        'Venta de ' .
+        $fila['nombre'] .
+        ' x' .
+        $cantidad;
 
-);
+    $sqlVenta = "
+        INSERT INTO ventas
+        (
+            usuario_id,
+            tipo,
+            descripcion,
+            referencia_id,
+            total
+        )
+        VALUES
+        (
+            ?, ?, ?, ?, ?
+        )
+    ";
 
-if($stmtVenta->execute()){
+    $stmtVenta = $connect->prepare(
+        $sqlVenta
+    );
 
-    echo json_encode([
+    $stmtVenta->bind_param(
+
+        "issid",
+
+        $usuario_id,
+        $tipo,
+        $descripcion,
+        $producto_id,
+        $total
+
+    );
+
+    $stmtVenta->execute();
+
+    $venta_id = $connect->insert_id;
+
+    // BITACORA
+
+    if (!registerActivity(
+
+        $connect,
+        $usuario_id,
+        'CREAR',
+        'VENTAS',
+        $venta_id,
+        $descripcion
+
+    )) {
+        $connect->rollback();
+        apiError('No se pudo completar la operación.', 500);
+    }
+
+    $connect->commit();
+
+    jsonResponse([
 
         "success" => true,
 
@@ -182,15 +214,17 @@ if($stmtVenta->execute()){
 
     ]);
 
-}else{
+}catch(Throwable $e){
 
-    echo json_encode([
+    $connect->rollback();
 
-        "success" => false,
+    error_log(
+        'Error en sell_product: ' . $e->getMessage()
+    );
 
-        "message" =>
-        "Error al registrar venta"
-
-    ]);
+    apiError(
+        'No se pudo completar la operación.',
+        500
+    );
 
 }

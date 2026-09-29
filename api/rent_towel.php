@@ -1,6 +1,16 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../includes/api_auth.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 header('Content-Type: application/json');
 
@@ -8,12 +18,10 @@ require_once '../php_action/conn_db.php';
 
 if(!isset($_SESSION['telefono'])){
 
-    echo json_encode([
+    jsonResponse([
         "success" => false,
         "message" => "Sesión expirada"
     ]);
-
-    exit();
 }
 
 $telefono = $_SESSION['telefono'];
@@ -49,38 +57,66 @@ $descripcion =
 
 $total = 25.00;
 
-$sqlVenta = "
-    INSERT INTO ventas
-    (
-        usuario_id,
-        tipo,
-        descripcion,
-        total
-    )
-    VALUES
-    (
-        ?, ?, ?, ?
-    )
-";
+require_once __DIR__ . '/../includes/audit.php';
 
-$stmtVenta = $connect->prepare(
-    $sqlVenta
-);
+// TRANSACCION
 
-$stmtVenta->bind_param(
+$connect->begin_transaction();
 
-    "issd",
+try{
 
-    $usuario_id,
-    $tipo,
-    $descripcion,
-    $total
+    $sqlVenta = "
+        INSERT INTO ventas
+        (
+            usuario_id,
+            tipo,
+            descripcion,
+            total
+        )
+        VALUES
+        (
+            ?, ?, ?, ?
+        )
+    ";
 
-);
+    $stmtVenta = $connect->prepare(
+        $sqlVenta
+    );
 
-if($stmtVenta->execute()){
+    $stmtVenta->bind_param(
 
-    echo json_encode([
+        "issd",
+
+        $usuario_id,
+        $tipo,
+        $descripcion,
+        $total
+
+    );
+
+    $stmtVenta->execute();
+
+    $venta_id = $connect->insert_id;
+
+    // BITACORA
+
+    if (!registerActivity(
+
+        $connect,
+        $usuario_id,
+        'CREAR',
+        'VENTAS',
+        $venta_id,
+        $descripcion
+
+    )) {
+        $connect->rollback();
+        apiError('No se pudo completar la operación.', 500);
+    }
+
+    $connect->commit();
+
+    jsonResponse([
 
         "success" => true,
 
@@ -89,15 +125,17 @@ if($stmtVenta->execute()){
 
     ]);
 
-}else{
+}catch(Throwable $e){
 
-    echo json_encode([
+    $connect->rollback();
 
-        "success" => false,
+    error_log(
+        'Error en rent_towel: ' . $e->getMessage()
+    );
 
-        "message" =>
-        "Error al registrar renta"
-
-    ]);
+    apiError(
+        'No se pudo completar la operación.',
+        500
+    );
 
 }

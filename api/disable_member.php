@@ -1,25 +1,19 @@
 <?php
 
-session_start();
+require_once '../php_action/conn_db.php';
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/../includes/api_auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 
-require_once "../php_action/conn_db.php";
-
-//=======================================
-// VALIDAR SESIÓN
-//=======================================
-
-if(!isset($_SESSION['telefono'])){
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Sesión expirada."
-    ]);
-
-    exit();
-
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
 }
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 //=======================================
 // VALIDAR ID
@@ -27,16 +21,76 @@ if(!isset($_SESSION['telefono'])){
 
 if(empty($_POST['id'])){
 
-    echo json_encode([
+    jsonResponse([
         "success" => false,
         "message" => "Cliente inválido."
     ]);
 
-    exit();
-
 }
 
 $id = intval($_POST['id']);
+
+if($id <= 0){
+
+    jsonResponse([
+        "success" => false,
+        "message" => "Cliente inválido."
+    ]);
+
+}
+
+//=======================================
+// OBTENER CLIENTE
+//=======================================
+
+$sqlPersona = "
+
+    SELECT
+
+        id,
+        nombre,
+        estatus
+
+    FROM personas
+    WHERE id = ?
+    LIMIT 1
+
+";
+
+$stmtPersona = $connect->prepare($sqlPersona);
+
+$stmtPersona->bind_param(
+    "i",
+    $id
+);
+
+$stmtPersona->execute();
+
+$resultPersona = $stmtPersona->get_result();
+
+if($resultPersona->num_rows !== 1){
+
+    $stmtPersona->close();
+
+    jsonResponse([
+        "success" => false,
+        "message" => "El cliente no existe."
+    ]);
+
+}
+
+$persona = $resultPersona->fetch_assoc();
+
+$stmtPersona->close();
+
+if((int) $persona['estatus'] === 2){
+
+    jsonResponse([
+        "success" => false,
+        "message" => "El cliente ya está inhabilitado."
+    ]);
+
+}
 
 //=======================================
 // INHABILITAR
@@ -52,11 +106,36 @@ $sql = "
 
 $stmt = $connect->prepare($sql);
 
-$stmt->bind_param("i", $id);
+$stmt->bind_param(
+    "i",
+    $id
+);
+
+$connect->begin_transaction();
+
+try{
 
 if($stmt->execute()){
 
-    echo json_encode([
+    $usuario_id = apiCurrentUserId();
+
+    if (!registerActivity(
+
+        $connect,
+        $usuario_id,
+        'DESACTIVAR',
+        'PERSONAS',
+        $id,
+        "Inhabilitó al cliente {$persona['nombre']} desde el dashboard"
+
+    )) {
+        $connect->rollback();
+        apiError('No se pudo completar la operación.', 500);
+    }
+
+    $connect->commit();
+
+    jsonResponse([
 
         "success" => true,
         "message" => "Cliente inhabilitado correctamente."
@@ -65,12 +144,29 @@ if($stmt->execute()){
 
 }else{
 
-    echo json_encode([
+    $connect->rollback();
+
+    jsonResponse([
 
         "success" => false,
         "message" => "No fue posible inhabilitar al cliente."
 
     ]);
+
+}
+
+}catch(Throwable $e){
+
+    $connect->rollback();
+
+    error_log(
+        'Error en disable_member: ' . $e->getMessage()
+    );
+
+    apiError(
+        'No se pudo completar la operación.',
+        500
+    );
 
 }
 

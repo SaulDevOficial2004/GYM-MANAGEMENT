@@ -294,25 +294,66 @@ Clone the repository.
 git clone https://github.com/SaulDevOficial2004/ProFitnessGym-v1.git
 ```
 
-Import the database located in:
+1. Create the database and import ONLY the schema (no real data):
 
-```
-database/profitnessgym.sql
-```
-
-Rename:
-
-```
-php_action/conn_db_example.php
+```bash
+mysql -u root -p -e "CREATE DATABASE profitnessgym CHARACTER SET utf8mb4;"
+mysql -u root -p profitnessgym < database/profitnessgym.sql
 ```
 
-to
+> Windows: run the imports from `cmd.exe`, NOT PowerShell, e.g.
+> `cmd /c "mysql -u root -p profitnessgym < database/profitnessgym.sql"`.
+> Piping with `Get-Content ... | mysql` in PowerShell recodes the file
+> and corrupts non-ASCII text (e.g. `Dueño` arrives as `Due??o`).
 
-```
-php_action/conn_db.php
+2. Optional: load fictional demo data (2 users, 5 people, 3 memberships,
+   5 products, 4 sales):
+
+```bash
+mysql -u root -p profitnessgym < database/seed_demo.sql
 ```
 
-Configure your database credentials and run the project using Apache and MySQL.
+Demo credentials: admin `1000000001` / `demo1234`,
+receptionist `1000000002` / `recep1234`.
+
+3. Copy `.env.example` to `.env` and set your credentials:
+
+```bash
+cp .env.example .env
+```
+
+```env
+DB_HOST=localhost
+DB_USER=root
+DB_PASS=root
+DB_NAME=profitnessgym
+APP_ENV=local
+APP_KEY=
+STORAGE_PATH=../gms-storage
+TURNSTILE_SECRET=
+TURNSTILE_SITEKEY=
+APP_URL=
+```
+
+> `STORAGE_PATH` must resolve OUTSIDE the document root (absolute path
+> recommended). The app aborts startup with a log error if it falls
+> inside the webroot.
+
+4. Create the storage directory outside the document root:
+
+```bash
+mkdir -p ../gms-storage/comprobantes ../gms-storage/coaches ../gms-storage/logs
+```
+
+5. If you are migrating an existing install, move the uploaded files
+   (the script is idempotent and never touches the database):
+
+```bash
+php bin/migrar_uploads.php
+```
+
+6. Configure your database credentials and run the project using
+   Nginx + PHP-FPM and MySQL/MariaDB (see `deploy/nginx-gms.conf`).
 
 ---
 

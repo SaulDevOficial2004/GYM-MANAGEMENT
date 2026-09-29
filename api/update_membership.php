@@ -1,21 +1,20 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../includes/api_auth.php';
 
-header('Content-Type: application/json');
-
-require_once "../php_action/conn_db.php";
-
-if(!isset($_SESSION['telefono'])){
-    
-    echo json_encode([
-        
-        "status" => "error",
-        "message" => "Sesión expirada"
-    ]);
-
-    exit();
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
 }
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
+
+header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/../php_action/conn_db.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -124,11 +123,10 @@ if($stmt->execute()){
         $id,
         $total
     );
-
     //EJECUTAR VENTA
     if($stmtVenta->execute()){
 
-        echo json_encode([
+        jsonResponse([
 
             "status" => "success",
             "message" => "Membresía actualizada correctamente"
@@ -137,7 +135,7 @@ if($stmt->execute()){
 
     }else{
 
-        echo json_encode([
+        jsonResponse([
 
             "status" => "error",
             "message" => "Error al registrar la venta"
@@ -147,7 +145,8 @@ if($stmt->execute()){
 
 }else{
 
-    echo json_encode([
+    jsonResponse([
+
         "status" => "error",
         "message" => "Error al actualizar"
     ]);

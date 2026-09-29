@@ -1,6 +1,16 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../includes/api_auth.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 require_once '../php_action/conn_db.php';
 
@@ -98,14 +108,14 @@ if($stmt->execute()){
 
     $stmtVenta->execute();
 
-    echo json_encode([
+    jsonResponse([
         "status" => "success",
         "message" => "Visita registrada"
     ]);
 
 }else{
 
-    echo json_encode([
+    jsonResponse([
         "status" => "error",
         "message" => "Error al registrar visita"
     ]);

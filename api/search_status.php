@@ -2,20 +2,39 @@
 
 header('Content-Type: application/json');
 
-require_once '../php_action/conn_db.php';
+require_once __DIR__ . '/../includes/signed_link.php';
+require_once __DIR__ . '/../includes/rate_limit.php';
 
 // Obtener búsqueda
 $search = trim($_GET['search'] ?? '');
 
 if(empty($search)){
 
-    echo json_encode([]);
-    exit();
+    jsonResponse([]);
+}
+
+if(preg_match('/^CLI-[A-F0-9]{6}$/', $search) !== 1){
+
+    jsonResponse([]);
 
 }
 
-// Agregar comodines para LIKE
-$search = "%" . $search . "%";
+$ipCliente = getClientIp();
+
+if (rateLimit('pub_search_status:' . $ipCliente, 'search', 10, 60)
+    || rateLimit('pub_search_status_hora:' . $ipCliente, 'search', 60, 3600)) {
+    jsonResponse([
+        'success' => false,
+        'message' => 'Demasiadas consultas. Intenta más tarde.'
+    ], 429);
+}
+
+recordLoginAttempt('pub_search_status:' . $ipCliente, false);
+recordLoginAttempt('pub_search_status_hora:' . $ipCliente, false);
+
+if (random_int(1, 100) === 1) {
+    pruneLoginAttempts();
+}
 
 $sql = "
 
@@ -26,11 +45,7 @@ $sql = "
 
     FROM personas
 
-    WHERE
-    (
-        nombre LIKE ?
-        OR folio LIKE ?
-    )
+    WHERE folio=?
 
     AND estatus = 1
 
@@ -41,9 +56,8 @@ $sql = "
 $stmt = $connect->prepare($sql);
 
 $stmt->bind_param(
-    "ss",
+    "s",
     $search,
-    $search
 );
 
 $stmt->execute();
@@ -58,7 +72,7 @@ while($row = $result->fetch_assoc()){
 
 }
 
-echo json_encode($personas);
+jsonResponse($personas);
 
 $stmt->close();
 $connect->close();

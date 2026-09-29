@@ -1,6 +1,16 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../includes/api_auth.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 header('Content-Type: application/json');
 
@@ -10,24 +20,20 @@ require_once "../php_action/conn_db.php";
 
 if(!isset($_SESSION['telefono'])){
 
-    echo json_encode([
+    jsonResponse([
         "success"=>false,
         "message"=>"Sesión expirada."
     ]);
-
-    exit();
 }
 
 //VALIDAR DATOS
 
 if(empty($_POST['id']) || empty(trim($_POST['motivo']))){
 
-    echo json_encode([
+    jsonResponse([
         "success"=>false,
         "message"=>"Debes escribir un motivo."
     ]);
-
-    exit();
 }
 
 $id = intval($_POST['id']);
@@ -100,7 +106,7 @@ try{
 
     $connect->commit();
 
-    echo json_encode([
+    jsonResponse([
 
         "success"=>true,
         "message"=>"Comprobante rechazado."
@@ -111,7 +117,7 @@ try{
 
     $connect->rollback();
 
-    echo json_encode([
+    jsonResponse([
 
         "success"=>false,
         "message"=>$e->getMessage()

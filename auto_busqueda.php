@@ -1,239 +1,237 @@
 <?php
-
 require_once 'php_action/conn_db.php';
-
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
+    <meta name="description" content="Consulta el estado actual de tu membresía.">
 
-    <meta charset="UTF-8">
+    <title>Consulta de membresía | GYM MANAGEMENT</title>
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <?php include 'includes/head.php'; ?>
 
-    <title>Consulta de Membresía | ProfitnessGym</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.min.css"
+          integrity="sha384-dCW5imOdApH6OwpFau8cZNKjqVbJYnCA5q+8YsMYP3XwXKsV6Jfz1u6MZLnXaBsS"
+          crossorigin="anonymous">
 
-    <link rel="shortcut icon"
-          href="img/logo_pfg-removebg-preview.ico"
-          type="image/x-icon">
-
-    <!-- Bootstrap -->
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-
-    <!-- FontAwesome -->
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-    <!-- SweetAlert2 -->
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-
-    <!-- CSS -->
-
-    <link rel="stylesheet"
-          href="css/auto_busqueda.css">
-
+    <link rel="stylesheet" href="css/auto_busqueda.css">
 </head>
-
 <body>
 
-<!-- NAVBAR -->
+<nav class="membership-navbar">
+    <div class="container">
+        <div class="membership-navbar-content">
+            <a href="inicio.php" class="membership-brand">
+                <span class="membership-brand-logo">
+                    <img src="img/logo.png" alt="GYM MANAGEMENT">
+                </span>
 
-<nav class="navbar navbar-expand-lg navbar-custom">
+                <span class="membership-brand-text">
+                    <strong>GYM MANAGEMENT</strong>
+                    <small>Consulta de membresías</small>
+                </span>
+            </a>
 
-    <a class="navbar-brand d-flex align-items-center"
-       href="#">
-
-        <img src="img/logo_pfg-removebg-preview.png"
-             class="nav-logo">
-
-        <span class="brand-text">
-
-            ProfitnessGym
-
-        </span>
-
-    </a>
-
+            <a href="inicio.php" class="membership-back-button">
+                <i class="fas fa-arrow-left"></i>
+                Volver al inicio
+            </a>
+        </div>
+    </div>
 </nav>
 
-<!-- CONTENIDO -->
+<main class="membership-search-page">
+    <div class="container">
+        <section class="membership-search-card">
+            <div class="membership-search-header">
+                <span class="membership-search-icon">
+                    <i class="fas fa-id-card"></i>
+                </span>
 
-<div class="search-card">
+                <span class="membership-search-label">
+                    Consulta personal
+                </span>
 
-    <!-- HEADER -->
+                <h1>Consulta tu membresía</h1>
 
-    <div class="search-header">
+                <p>
+                    Escribe tu folio único para verificar el estado actual de tu membresía.
+                </p>
+            </div>
 
-        <h1>
+            <div class="membership-search-box">
+                <span class="membership-search-box-icon">
+                    <i class="fas fa-search"></i>
+                </span>
 
-            <i class="fas fa-search"></i>
+                <input
+                    type="search"
+                    id="clientSearch"
+                    placeholder="CLI-XXXXXX"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="10">
 
-            Consulta tu Membresía
+                <button
+                    type="button"
+                    id="clearSearchButton"
+                    class="membership-search-clear d-none"
+                    aria-label="Limpiar búsqueda">
 
-        </h1>
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
 
-        <p>
+            <div class="membership-search-help">
+                <span>
+                    <i class="fas fa-shield-alt"></i>
+                    Consulta segura
+                </span>
 
-            Busca tu nombre para verificar el estado actual de tu membresía
+                <small>
+                    Ingresa el folio completo para realizar la consulta.
+                </small>
+            </div>
 
-        </p>
+            <div id="searchLoading" class="membership-search-loading d-none">
+                <span>
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
 
+                <strong>Buscando membresías...</strong>
+
+                <small>
+                    Espera un momento.
+                </small>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <span>
+                    <i class="fas fa-user-check"></i>
+                </span>
+
+                <h4>Busca tu registro</h4>
+
+                <p>
+                    Ingresa el folio único que recibiste al registrarte.
+                </p>
+            </div>
+
+            <div id="noResultsState" class="empty-state d-none">
+                <span class="empty-state-warning">
+                    <i class="fas fa-search"></i>
+                </span>
+
+                <h4>Sin coincidencias</h4>
+
+                <p>
+                    No encontramos registros relacionados con tu búsqueda.
+                </p>
+            </div>
+
+            <div id="resultsSection" class="membership-results-section d-none">
+                <div class="membership-results-header">
+                    <div>
+                        <span>Resultados</span>
+                        <h2>Membresías encontradas</h2>
+                    </div>
+
+                    <strong id="resultsCount">
+                        0 resultados
+                    </strong>
+                </div>
+
+                <div id="resultsContainer" class="table-responsive">
+                    <table class="table modern-table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Vencimiento</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="resultTable"></tbody>
+                    </table>
+                </div>
+
+                <div id="mobileResults" class="membership-mobile-results"></div>
+            </div>
+        </section>
+
+        <section class="membership-information-card">
+            <div class="membership-information-icon">
+                <i class="fas fa-circle-info"></i>
+            </div>
+
+            <div>
+                <h3>¿No encuentras tu membresía?</h3>
+
+                <p>
+                    Verifica que el nombre o folio esté escrito correctamente. También puedes solicitar apoyo directamente en recepción.
+                </p>
+            </div>
+        </section>
     </div>
+</main>
 
-    <!-- BUSCADOR -->
+<footer class="membership-footer">
+    <div class="container">
+        <div class="membership-footer-content">
+            <div class="membership-footer-brand">
+                <span>
+                    <img src="img/logo.png" alt="GYM MANAGEMENT">
+                </span>
 
-    <div class="search-box">
+                <div>
+                    <strong>GYM MANAGEMENT</strong>
+                    <small>Consulta rápida de membresías</small>
+                </div>
+            </div>
 
-        <i class="fas fa-user"></i>
+            <div class="membership-footer-social">
+                <a
+                    href="https://www.facebook.com/p/Pro-Fitness-Gym-100042239455651/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook">
 
-        <input
-            type="text"
-            id="clientSearch"
-            placeholder="Escribe tu nombre, apellido o folio">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
 
+                <a
+                    href="https://www.instagram.com/gym.pro_fitness/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram">
+
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="membership-footer-bottom">
+            <span>
+                © <?php echo date('Y'); ?> GYM MANAGEMENT
+            </span>
+
+            <span>
+                <i class="fas fa-shield-alt"></i>
+                Consulta protegida
+            </span>
+        </div>
     </div>
-
-    <!-- ESTADO VACÍO -->
-
-    <div
-        id="emptyState"
-        class="empty-state">
-
-        <i class="fas fa-users"></i>
-
-        <h4>
-
-            Busca tu registro
-
-        </h4>
-
-        <p>
-
-            Empieza escribiendo tu nombre en el buscador
-
-        </p>
-
-    </div>
-
-    <!-- TABLA -->
-
-    <div
-        id="resultsContainer"
-        class="table-responsive d-none">
-
-        <table
-            class="table modern-table">
-
-            <thead>
-
-                <tr>
-
-                    <th>Nombre</th>
-
-                    <th>Vencimiento</th>
-
-                    <th>Estatus</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody id="resultTable">
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-    <!-- CARDS MOVIL -->
-
-    <div
-        id="mobileResults"
-        class="d-none">
-
-    </div>
-
-    <!-- BOTÓN SALIR -->
-
-    <div class="text-center mt-4">
-
-        <a href="inicio.php"
-           class="btn-exit">
-
-            <i class="fas fa-sign-out-alt"></i>
-
-            Salir
-
-        </a>
-
-    </div>
-
-</div>
-
-<!-- FOOTER -->
-
-<footer class="footer-custom">
-
-    <img src="img/logo_pfg-removebg-preview.png"
-         class="footer-logo">
-
-    <h5>
-
-        ProfitnessGym
-
-    </h5>
-
-    <p>
-
-        Consulta rápida de membresías
-
-    </p>
-
-    <div class="social-links">
-
-        <a href="https://www.facebook.com/p/Pro-Fitness-Gym-100042239455651/"
-           target="_blank">
-
-            <i class="fab fa-facebook"></i>
-
-        </a>
-
-        <a href="https://www.instagram.com/gym.pro_fitness/"
-           target="_blank">
-
-            <i class="fab fa-instagram"></i>
-
-        </a>
-
-    </div>
-
 </footer>
 
-<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"
+        integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2"
+        crossorigin="anonymous"></script>
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-
-<!-- Bootstrap -->
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- SweetAlert -->
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+        crossorigin="anonymous"></script>
 
 <script src="js/auto_busqueda.js"></script>
 
 </body>
-
 </html>

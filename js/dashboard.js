@@ -56,16 +56,15 @@ $('#updateMembershipForm').submit(async function(e){
 
     try{
 
-        let response = await fetch('/api/update_membership.php',{
+        let result = await apiFetch('/api/update_membership.php',{
 
             method: 'POST',
-            headers: {
-                'Content-Type':'application/json'
-            },
             body: JSON.stringify(formData)
         });
 
-        let data = await response.json()
+        if(!result) return;
+
+        let data = result.data;
 
         if(data.status === "success"){
 
@@ -124,7 +123,7 @@ $('#searchVisitante').on('keyup', function(){
 
         success:function(response){
 
-            let data = JSON.parse(response);
+            let data = (typeof response === 'string') ? JSON.parse(response) : response;
             let html = '';
 
             if(data.length > 0){
@@ -179,21 +178,20 @@ $(document).on('click','.registerVisitBtn',function(){
 
     let visitante_id = $(this).data('id');
 
-    fetch('api/create_visit.php',{
+    apiFetch('api/create_visit.php',{
 
         method:'POST',
-
-        headers:{
-            'Content-Type':'application/json'
-        },
 
         body:JSON.stringify({
             visitante_id:visitante_id
         })
 
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(result => {
+
+        if(!result) return;
+
+        const data = result.data;
 
 
         if(data.status === 'success'){
@@ -242,21 +240,20 @@ $('#createVisitanteForm').on('submit',function(e){
 
     let nombre = $('#visitante_nombre').val();
 
-    fetch('api/create_visitante.php',{
+    apiFetch('api/create_visitante.php',{
 
         method:'POST',
-
-        headers:{
-            'Content-Type':'application/json'
-        },
 
         body:JSON.stringify({
             nombre:nombre
         })
 
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(result => {
+
+        if(!result) return;
+
+        const data = result.data;
 
         if(data.status === 'success'){
 
@@ -311,7 +308,7 @@ $('#searchProductDashboard').on('keyup', function(){
 
         success:function(response){
 
-            let data = JSON.parse(response);
+            let data = (typeof response === 'string') ? JSON.parse(response) : response;
 
             let html = '';
 
@@ -396,10 +393,26 @@ $(document).on(
     }
 );
 
+let sellProductDashboardSubmitting = false;
+
 $('#sellProductDashboardForm').submit(
     async function(e){
 
         e.preventDefault();
+
+        if(sellProductDashboardSubmitting){
+            return;
+        }
+
+        sellProductDashboardSubmitting = true;
+
+        let submitButton = $(this).find('button[type="submit"]');
+        let submitButtonContent = submitButton.html();
+        let saleCompleted = false;
+
+        submitButton
+            .prop('disabled',true)
+            .html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
 
         let formData = {
 
@@ -411,57 +424,75 @@ $('#sellProductDashboardForm').submit(
 
         };
 
-        let response =
-            await fetch(
-                'api/sell_product.php',
-                {
+        try{
 
-                    method:'POST',
+            let result =
+                await apiFetch(
+                    'api/sell_product.php',
+                    {
 
-                    headers:{
-                        'Content-Type':
-                        'application/json'
-                    },
+                        method:'POST',
 
-                    body:
-                    JSON.stringify(formData)
+                        body:
+                        JSON.stringify(formData)
 
-                }
-            );
+                    }
+                );
 
-        let data =
-            await response.json();
+            if(!result) return;
 
-        if(data.success){
+            let data = result.data;
 
-            $('#sellProductQuantityModal')
-                .modal('hide');
+            if(data.success){
 
-            $('#sellProductDashboardModal')
-                .modal('hide');
+                saleCompleted = true;
 
-            Toastify({
+                $('#sellProductQuantityModal')
+                    .modal('hide');
 
-                text:data.message,
+                $('#sellProductDashboardModal')
+                    .modal('hide');
 
-                duration:3000,
+                Toastify({
 
-                gravity:"top",
+                    text:data.message,
 
-                position:"right",
+                    duration:3000,
 
-                style:{
-                    background:
-                    "linear-gradient(to right,#183B6B,#16BFFD)"
-                }
+                    gravity:"top",
 
-            }).showToast();
+                    position:"right",
 
-            setTimeout(() => {
+                    style:{
+                        background:
+                        "linear-gradient(to right,#183B6B,#16BFFD)"
+                    }
 
-                location.reload();
+                }).showToast();
 
-            },1000);
+                setTimeout(() => {
+
+                    location.reload();
+
+                },1000);
+
+            }
+
+        }catch(error){
+
+            console.log(error);
+
+        }finally{
+
+            if(!saleCompleted){
+
+                sellProductDashboardSubmitting = false;
+
+                submitButton
+                    .prop('disabled',false)
+                    .html(submitButtonContent);
+
+            }
 
         }
 
@@ -477,16 +508,17 @@ $('#rentTowelForm').submit(
 
         try{
 
-            let response =
-                await fetch(
+            let result =
+                await apiFetch(
                     'api/rent_towel.php',
                     {
                         method:'POST'
                     }
                 );
 
-            let data =
-                await response.json();
+            if(!result) return;
+
+            let data = result.data;
 
             if(data.success){
 
@@ -544,6 +576,8 @@ $(document).on('click', '.viewPaymentBtn', function(){
 
     const archivo = $(this).data('archivo');
     const extension = archivo.split('.').pop().toLowerCase();
+    const comprobanteId = $(this).data('id');
+    const rutaArchivo = 'api/ver_archivo.php?id=' + encodeURIComponent(comprobanteId);
 
     $('#adminPreviewImage').addClass('d-none');
     $('#adminPreviewPdf').addClass('d-none');
@@ -551,13 +585,13 @@ $(document).on('click', '.viewPaymentBtn', function(){
     if(extension === 'pdf'){
 
         $('#adminPreviewPdf')
-            .attr('src', 'uploads/' + archivo)
+            .attr('src', rutaArchivo)
             .removeClass('d-none');
 
     }else{
 
         $('#adminPreviewImage')
-            .attr('src', 'uploads/' + archivo)
+            .attr('src', rutaArchivo)
             .removeClass('d-none');
 
     }
@@ -595,17 +629,19 @@ $(document).on('click','.viewHistoryPaymentBtn',function(){
     const archivo = $(this).data('archivo');
 
     const extension = archivo.split('.').pop().toLowerCase();
+    const comprobanteId = $(this).data('id');
+    const rutaArchivo = 'api/ver_archivo.php?id=' + encodeURIComponent(comprobanteId);
 
     $('#historyPreviewImage').addClass('d-none');
     $('#historyPreviewPdf').addClass('d-none');
 
     if(extension == 'pdf'){
 
-        $('#historyPreviewPdf').attr('src', 'uploads/' + archivo).removeClass('d-none');
+        $('#historyPreviewPdf').attr('src', rutaArchivo).removeClass('d-none');
 
     }else{
 
-        $('#historyPreviewImage').attr('src', 'uploads/' + archivo).removeClass('d-none');
+        $('#historyPreviewImage').attr('src', rutaArchivo).removeClass('d-none');
 
     }
 
@@ -652,12 +688,16 @@ $('#confirmPaymentBtn').click(function(){
 
         try{
 
-            const response = await fetch('api/confirmar_comprobante.php', {
+            const result = await apiFetch('api/confirmar_comprobante.php', {
 
                     method:'POST',
                     body:formData
 
                 });
+
+            if(!result) return;
+
+            const response = result.response;
 
             if(!response.ok){
 
@@ -665,7 +705,7 @@ $('#confirmPaymentBtn').click(function(){
 
             }
 
-            const data = await response.json();
+            const data = result.data;
 
             if(data.success){
 
@@ -775,14 +815,16 @@ $('#rejectPaymentBtn').click(function(){
 
             try{
 
-                const response = await fetch('api/rechazar_comprobante.php', {
+                const result = await apiFetch('api/rechazar_comprobante.php', {
 
                         method:'POST',
                         body:formData
 
                     });
 
-                const data = await response.json();
+                if(!result) return;
+
+                const data = result.data;
 
                 if(data.success){
 
@@ -849,14 +891,16 @@ $('#transferSettingsForm').submit(async function(e){
 
     try{
 
-        const response = await fetch('api/update_transferencias.php', {
+        const result = await apiFetch('api/update_transferencias.php', {
 
                 method:'POST',
                 body:formData
 
             });
 
-        const data = await response.json();
+        if(!result) return;
+
+        const data = result.data;
 
         if(data.success){
 
@@ -894,83 +938,7 @@ $('#transferSettingsForm').submit(async function(e){
 });
 
 //=======================================
-// INHABILITAR CLIENTE
-//=======================================
-
-$(document).on('click', '.disableMemberBtn', function(e){
-
-    e.preventDefault();
-
-    const id = $(this).data('id');
-
-    Swal.fire({
-
-        title:'¿Inhabilitar cliente?',
-        text:'El cliente dejará de aparecer como miembro activo.',
-        icon:'warning',
-        showCancelButton:true,
-        confirmButtonColor:'#d33',
-        cancelButtonColor:'#183B6B',
-        confirmButtonText:'Sí, inhabilitar',
-        cancelButtonText:'Cancelar'
-
-    }).then((result)=>{
-
-        if(!result.isConfirmed){
-
-            return;
-
-        }
-
-        fetch(`del_ven.php?id=${id}`)
-
-        .then(response=>response.text())
-
-        .then(()=>{
-
-            Toastify({
-
-                text:'Cliente inhabilitado correctamente.',
-                duration:3000,
-                gravity:'top',
-                position:'right',
-
-                style:{
-
-                    background:
-                    "linear-gradient(to right,#183B6B,#16BFFD)"
-
-                }
-
-            }).showToast();
-
-            setTimeout(()=>{
-
-                location.reload();
-
-            },1000);
-
-        })
-
-        .catch(()=>{
-
-            Swal.fire({
-
-                icon:'error',
-                title:'Error',
-                text:'No fue posible inhabilitar al cliente.',
-                confirmButtonColor:'#183B6B'
-
-            });
-
-        });
-
-    });
-
-});
-
-//=======================================
-// INHABILITAR CLIENTE
+// INHABILITAR CLIENTE (handler único: api/disable_member.php)
 //=======================================
 
 $(document).on('click', '.disableMemberBtn', function(e){
@@ -1003,12 +971,16 @@ $(document).on('click', '.disableMemberBtn', function(e){
 
         try{
 
-            const response = await fetch('api/disable_member.php',{
+            const result = await apiFetch('api/disable_member.php',{
 
                 method:'POST',
                 body:formData
 
             });
+
+            if(!result) return;
+
+            const response = result.response;
 
             if(!response.ok){
 
@@ -1016,7 +988,7 @@ $(document).on('click', '.disableMemberBtn', function(e){
 
             }
 
-            const data = await response.json();
+            const data = result.data;
 
             if(data.success){
 

@@ -1,0 +1,379 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 14
+			path: api/confirmar_comprobante.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/create_membership.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 12
+			path: api/create_person.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: api/create_product.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 11
+			path: api/create_receptionist.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: api/create_visit.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 7
+			path: api/create_visitante.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: api/delete_coach.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/delete_membership.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/delete_person.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/delete_product.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/disable_member.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/enable_person.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: api/generar_enlace_cliente.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: api/get_audit_log.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/get_monthly_sales_current_year.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: api/get_payment_history.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/get_sales_by_user.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/get_sales_distribution.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: api/get_sales_history.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/get_sales_last_7_days.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: api/login_api.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: api/rechazar_comprobante.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: api/rent_towel.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/reset_receptionist_password.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/search_folio.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/search_products.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/search_status.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: api/search_visitantes.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 12
+			path: api/sell_product.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/toggle_membership.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: api/toggle_product.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/toggle_receptionist.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: api/update_membership.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/update_membership_admin.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: api/update_person.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 7
+			path: api/update_product.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 11
+			path: api/update_receptionist.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: api/update_transferencias.php
+
+		-
+			message: '#^Constant STORAGE_PATH not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: api/upload_comprobante.php
+
+		-
+			message: '#^Constant TURNSTILE_SECRET not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: api/upload_comprobante.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: api/upload_comprobante.php
+
+		-
+			message: '#^Constant STORAGE_PATH not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: api/ver_archivo.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: api/ver_archivo.php
+
+		-
+			message: '#^Constant APP_ENV not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant DB_HOST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant DB_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant DB_PASS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant DB_USER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Constant STORAGE_PATH not found\.$#'
+			identifier: constant.notFound
+			count: 6
+			path: includes/bootstrap.php
+
+		-
+			message: '#^Variable \$connect might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/modals/add_person_modal.php
+
+		-
+			message: '#^Variable \$configuracionTransferencias might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: includes/partials/pagina_modales.php
+
+		-
+			message: '#^Variable \$membresiasActivas might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/pagina_modales.php
+
+		-
+			message: '#^Variable \$comprobantesPendientes might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/pagina_seccion_pendientes_lista.php
+
+		-
+			message: '#^Variable \$totalPendientes might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/pagina_seccion_pendientes_lista.php
+
+		-
+			message: '#^Variable \$cardColor might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/pagina_seccion_pendientes_panel.php
+
+		-
+			message: '#^Variable \$totalPendientes might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/partials/pagina_seccion_pendientes_panel.php
+
+		-
+			message: '#^Variable \$miembrosVencidos might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/pagina_seccion_vencidas.php
+
+		-
+			message: '#^Variable \$totalVencidos might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/partials/pagina_seccion_vencidas.php
+
+		-
+			message: '#^Variable \$paginaActual might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/paginacion.php
+
+		-
+			message: '#^Variable \$totalPaginas might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/partials/paginacion.php
+
+		-
+			message: '#^Constant APP_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/signed_link.php
+
+		-
+			message: '#^Constant APP_URL not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/signed_link.php

@@ -1,20 +1,30 @@
 <?php
 
-header('Content-Type:application/json');
+require_once __DIR__ . '/../includes/api_auth.php';
 
-require_once '../php_action/conn_db.php';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
+
+header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/../php_action/conn_db.php';
 
 //VALIDACION DE ID
 
 if(empty($_POST['id'])){
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => false,
         'message' => 'ID no recibido.'
     ]);
-
-    exit();
 }
 
 $id = intval($_POST['id']);
@@ -38,12 +48,10 @@ $resultCheck = $stmtCheck->get_result();
 
 if($resultCheck->num_rows === 0){
 
-    echo json_encode([
+    jsonResponse([
         'success' => false,
         'message' => 'Coach no encontrado.'
     ]);
-
-    exit();
 }
 
 //DESACTIVAR COACH
@@ -61,13 +69,13 @@ $stmt->bind_param("i",
 
 if($stmt->execute()){
 
-    echo json_encode([
+    jsonResponse([
         'success' => true,
         'message' => 'Coach eliminado correctamente.'
     ]);
 }else{
 
-    echo json_encode([
+    jsonResponse([
 
         'success' => false,
         'message' => 'No fue posible eliminar al coach.'

@@ -1,43 +1,48 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../includes/api_auth.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 header('Content-Type: application/json');
 
 require_once "../php_action/conn_db.php";
+require_once __DIR__ . '/../includes/audit.php';
 
 //VALIDAR SESION
 
 if(!isset($_SESSION['telefono'])){
 
-    echo json_encode([
+    jsonResponse([
         "success"=>false,
         "message"=>"Sesión expirada."
     ]);
-
-    exit();
 }
 
 //VALIDAR ID
 
 if(empty($_POST['id'])){
 
-    echo json_encode([
+    jsonResponse([
         "success"=>false,
         "message"=>"Comprobante inválido."
     ]);
-
-    exit();
 }
 
 if(empty($_POST['id']) || empty($_POST['membresia_id'])){
 
-    echo json_encode([
+    jsonResponse([
         "success"=>false,
         "message"=>"Datos inválidos."
     ]);
-
-    exit();
 }
 
 $id = intval($_POST['id']);
@@ -67,12 +72,10 @@ $resultUsuario = $stmt->get_result();
 
 if($resultUsuario->num_rows==0){
 
-    echo json_encode([
+    jsonResponse([
         "success"=>false,
         "message"=>"Usuario no encontrado."
     ]);
-
-    exit();
 }
 
 $usuario = $resultUsuario->fetch_assoc();
@@ -172,22 +175,13 @@ try{
 
     //CALCULAR FECHAS
 
-    $hoy = new DateTime();
+    $renovacion = \GMS\Domain\MembresiaRenovacion::calcular(
+        $comprobante['fecha_fin'],
+        (int) $membresia['dias']
+    );
 
-    $fechaFinActual = new DateTime($comprobante['fecha_fin']);
-
-    if($fechaFinActual > $hoy){
-
-        $fechaInicio = clone $fechaFinActual;
-
-    }else{
-
-        $fechaInicio = clone $hoy;
-
-    }
-
-    $fechaFin = clone $fechaInicio;
-    $fechaFin->modify("+" . ($membresia['dias'] - 1) . " days");
+    $fechaInicioSQL = $renovacion['inicio'];
+    $fechaFinSQL = $renovacion['fin'];
 
     //CALCULAR TOTAL
 
@@ -271,9 +265,6 @@ try{
     ";
 
     $stmtHistorial = $connect->prepare($sqlHistorial);
-
-    $fechaInicioSQL = $fechaInicio->format("Y-m-d");
-    $fechaFinSQL = $fechaFin->format("Y-m-d");
 
     $stmtHistorial->bind_param("iiissd",
 
@@ -362,26 +353,50 @@ try{
         );
     }
 
+    //BITACORA
+
+    if (!registerActivity(
+
+        $connect,
+        $usuario_id,
+        'EDITAR',
+        'COMPROBANTES',
+        $id,
+        "Confirmó comprobante #" . $id . " (" . $comprobante['folio_cliente'] . ")"
+
+    )) {
+        $connect->rollback();
+        apiError('No se pudo completar la operación.', 500);
+    }
+
     //COMMIT
 
     $connect->commit();
 
-    echo json_encode([
+    jsonResponse([
 
         "success"=>true,
         "message"=>"Pago confirmado correctamente."
 
     ]);
 
-    }catch(Exception $e){
+    }catch(Throwable $e){
 
         $connect->rollback();
+
+        error_log(
+            'Error en confirmar_comprobante: ' . $e->getMessage()
+        );
+
+        $mensaje = $e instanceof Exception
+            ? $e->getMessage()
+            : 'No se pudo completar la operación.';
 
         echo json_encode([
 
             "success"=>false,
 
-            "message"=>$e->getMessage()
+            "message"=>$mensaje
 
         ]);
 

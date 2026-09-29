@@ -1,403 +1,557 @@
-$('#searchMembership').on('keyup', function(){
+let currentMembershipFilter='all';
 
-    let value = $(this).val().toLowerCase();
+function filterMemberships(){
+    const searchValue=$('#searchMembership').val().toLowerCase().trim();
+    let visibleMemberships=0;
 
-    $('#membershipTable tbody tr').filter(function(){
+    $('.membership-card').each(function(){
+        const card=$(this);
+        const searchableText=String(card.data('search')).toLowerCase();
+        const status=String(card.data('status'));
+        const promotion=String(card.data('promotion'));
 
-        $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        const matchesSearch=searchableText.includes(searchValue);
+
+        let matchesFilter=true;
+
+        if(currentMembershipFilter==='active'){
+            matchesFilter=status==='active';
+        }
+
+        if(currentMembershipFilter==='inactive'){
+            matchesFilter=status==='inactive';
+        }
+
+        if(currentMembershipFilter==='promotion'){
+            matchesFilter=promotion==='promotion';
+        }
+
+        const shouldShow=matchesSearch&&matchesFilter;
+
+        card.toggle(shouldShow);
+
+        if(shouldShow){
+            visibleMemberships++;
+        }
     });
+
+    $('#visibleMembershipsCount').text(visibleMemberships);
+
+    $('#membershipsEmptyState').toggleClass(
+        'd-none',
+        visibleMemberships>0
+    );
+}
+
+$('#searchMembership').on('input',function(){
+    filterMemberships();
 });
 
-//CREAR PROMOCION
+$('#clearMembershipSearch').on('click',function(){
+    $('#searchMembership').val('').trigger('focus');
+    filterMemberships();
+});
 
-$('#promocion').on('change', function(){
+$('.membership-filter-button').on('click',function(){
+    currentMembershipFilter=String(
+        $(this).data('filter')
+    );
 
-    if($(this).is(':checked')){
+    $('.membership-filter-button').removeClass('active');
+    $(this).addClass('active');
 
-        $('#promoContainer').removeClass('d-none');
-    }else{
+    filterMemberships();
+});
 
-        $('#promoContainer').addClass('d-none');
+$('#promocion').on('change',function(){
+    const promotionEnabled=$(this).is(':checked');
+
+    $('#promoContainer').toggleClass(
+        'd-none',
+        !promotionEnabled
+    );
+
+    $('#precio_promocion').prop(
+        'required',
+        promotionEnabled
+    );
+
+    if(!promotionEnabled){
         $('#precio_promocion').val('');
     }
 });
 
-//EDITAR PROMOCION
+$('#edit_promocion').on('change',function(){
+    const promotionEnabled=$(this).is(':checked');
 
-$('#edit_promocion').on('change', function(){
+    $('#editPromoContainer').toggleClass(
+        'd-none',
+        !promotionEnabled
+    );
 
-    if($(this).is(':checked')){
+    $('#edit_precio_promocion').prop(
+        'required',
+        promotionEnabled
+    );
 
-        $('#editPromoContainer').removeClass('d-none');
-    }else{
-
-        $('#editPromoContainer').addClass('d-none');
+    if(!promotionEnabled){
         $('#edit_precio_promocion').val('');
     }
 });
 
-//ABRIR MODAL EDITAR
+$(document).on('click','.editMembershipBtn',function(){
+    const promocion=Number(
+        $(this).data('promocion')
+    )===1;
 
-$(document).on('click', '.editMembershipBtn', function(){
+    $('#edit_id').val(
+        $(this).data('id')
+    );
 
-    let id = $(this).data('id');
-    let nombre = $(this).data('nombre');
-    let descripcion = $(this).data('descripcion');
-    let precio = $(this).data('precio');
-    let promocion = $(this).data('promocion');
-    let precioPromocion = $(this).data('precio_promocion');
-    let dias = $(this).data('dias');
-    
-    $('#edit_id').val(id);
-    $('#edit_nombre').val(nombre);
-    $('#edit_descripcion').val(descripcion);
-    $('#edit_precio').val(precio);
-    $('#edit_dias').val(dias);
+    $('#edit_nombre').val(
+        $(this).data('nombre')
+    );
 
-    if(promocion == 1){
+    $('#edit_descripcion').val(
+        $(this).data('descripcion')
+    );
 
-        $('#edit_promocion').prop('checked', true);
-        $('#editPromoContainer').removeClass('d-none');
-        $('#edit_precio_promocion').val(precioPromocion);
+    $('#edit_precio').val(
+        $(this).data('precio')
+    );
 
-    }else{
+    $('#edit_dias').val(
+        $(this).data('dias')
+    );
 
-        $('#edit_promocion').prop('checked', false);
-        $('#editPromoContainer').addClass('d-none');
-        $('#edit_precio_promocion').val('');
-    }
+    $('#edit_promocion').prop(
+        'checked',
+        promocion
+    );
+
+    $('#editPromoContainer').toggleClass(
+        'd-none',
+        !promocion
+    );
+
+    $('#edit_precio_promocion')
+        .prop('required',promocion)
+        .val(
+            promocion
+                ? $(this).data('precio_promocion')
+                : ''
+        );
 
     $('#editMembershipModal').modal('show');
 });
 
-// CREAR MEMBRESIA
+$('#createMembershipForm').on('submit',async function(event){
+    event.preventDefault();
 
-$('#createMembershipForm').on('submit', async function(e){
+    const button=$('#createMembershipBtn');
+    const originalContent=button.html();
 
-        e.preventDefault();
+    const nombre=$('#nombre').val().trim();
+    const descripcion=$('#descripcion').val().trim();
+    const precio=Number($('#precio').val());
+    const dias=Number($('#dias').val());
+    const promocion=$('#promocion').is(':checked');
+    const precioPromocion=Number(
+        $('#precio_promocion').val()
+    );
 
-        let formData = new FormData();
+    if(!validateMembershipData(
+        nombre,
+        precio,
+        dias,
+        promocion,
+        precioPromocion
+    )){
+        return;
+    }
 
-        formData.append('nombre', $('#nombre').val());
-        formData.append('descripcion', $('#descripcion').val());
-        formData.append('precio', $('#precio').val());
-        formData.append('promocion', $('#promocion').is(':checked') ? 1 : 0);
-        formData.append('precio_promocion', $('#precio_promocion').val());
-        formData.append('dias', $('#dias').val());
+    const formData=new FormData();
 
-        try{
+    formData.append('nombre',nombre);
+    formData.append('descripcion',descripcion);
+    formData.append('precio',precio);
+    formData.append('promocion',promocion?1:0);
+    formData.append(
+        'precio_promocion',
+        promocion?precioPromocion:''
+    );
+    formData.append('dias',dias);
 
-            let response = await fetch('api/create_membership.php', {
+    button.prop('disabled',true).html(
+        '<i class="fas fa-spinner fa-spin"></i> Guardando...'
+    );
 
-                    method:'POST',
-                    body:formData
-
-                });
-
-            let data = await response.json();
-
-            if(data.success){
-
-                Toastify({
-                    text:data.message,
-                    duration:3000,
-                    gravity:'top',
-                    position:'right',
-                    style:{
-                        background:
-                        "linear-gradient(to right,#183B6B,#16BFFD)"
-                    }
-
-                }).showToast();
-
-                $('#addMembershipModal').modal('hide');
-
-                $('#createMembershipForm')[0].reset();
-
-                $('#promoContainer').addClass('d-none');
-
-                setTimeout(() => {
-
-                    location.reload();
-
-                },1000);
-
-            }else{
-
-                Swal.fire({
-                    icon:'error',
-                    title:'Error',
-                    text:data.message,
-                    confirmButtonColor:'#183B6B'
-                });
-
+    try{
+        const result=await apiFetch(
+            'api/create_membership.php',
+            {
+                method:'POST',
+                body:formData
             }
+        );
 
-        }catch(error){
-            console.error(error);
+        if(!result) return;
 
-            Swal.fire({
-                icon:'error',
-                title:'Error',
-                text:'No fue posible registrar la membresía.',
-                confirmButtonColor:'#183B6B'
-            });
+        const data=result.data;
 
+        if(!data.success){
+            throw new Error(
+                data.message
+                ||'No fue posible registrar la membresía.'
+            );
         }
 
+        showMembershipToast(data.message);
+
+        $('#addMembershipModal').modal('hide');
+
+        setTimeout(()=>{
+            location.reload();
+        },900);
+    }catch(error){
+        console.error(error);
+
+        showMembershipError(
+            error.message
+            ||'No fue posible registrar la membresía.'
+        );
+    }finally{
+        button.prop('disabled',false).html(originalContent);
+    }
+});
+
+$('#editMembershipForm').on('submit',async function(event){
+    event.preventDefault();
+
+    const button=$('#updateMembershipAdminBtn');
+    const originalContent=button.html();
+
+    const id=$('#edit_id').val();
+    const nombre=$('#edit_nombre').val().trim();
+    const descripcion=$('#edit_descripcion').val().trim();
+    const precio=Number($('#edit_precio').val());
+    const dias=Number($('#edit_dias').val());
+    const promocion=$('#edit_promocion').is(':checked');
+    const precioPromocion=Number(
+        $('#edit_precio_promocion').val()
+    );
+
+    if(!validateMembershipData(
+        nombre,
+        precio,
+        dias,
+        promocion,
+        precioPromocion
+    )){
+        return;
+    }
+
+    const formData=new FormData();
+
+    formData.append('id',id);
+    formData.append('nombre',nombre);
+    formData.append('descripcion',descripcion);
+    formData.append('precio',precio);
+    formData.append('promocion',promocion?1:0);
+    formData.append(
+        'precio_promocion',
+        promocion?precioPromocion:''
+    );
+    formData.append('dias',dias);
+
+    button.prop('disabled',true).html(
+        '<i class="fas fa-spinner fa-spin"></i> Guardando...'
+    );
+
+    try{
+        const result=await apiFetch(
+            'api/update_membership_admin.php',
+            {
+                method:'POST',
+                body:formData
+            }
+        );
+
+        if(!result) return;
+
+        const data=result.data;
+
+        if(!data.success){
+            throw new Error(
+                data.message
+                ||'No fue posible actualizar la membresía.'
+            );
+        }
+
+        showMembershipToast(data.message);
+
+        $('#editMembershipModal').modal('hide');
+
+        setTimeout(()=>{
+            location.reload();
+        },900);
+    }catch(error){
+        console.error(error);
+
+        showMembershipError(
+            error.message
+            ||'No fue posible actualizar la membresía.'
+        );
+    }finally{
+        button.prop('disabled',false).html(originalContent);
+    }
+});
+
+$(document).on('click','.toggleMembershipBtn',async function(){
+    const id=$(this).data('id');
+    const estadoActual=Number(
+        $(this).data('estado')
+    );
+
+    const nombre=$(this).data('nombre');
+    const nuevoEstado=estadoActual===1?0:1;
+    const accion=nuevoEstado===1?'activar':'desactivar';
+
+    const result=await Swal.fire({
+        icon:nuevoEstado===1?'question':'warning',
+        title:`¿Deseas ${accion} esta membresía?`,
+        text:nombre,
+        showCancelButton:true,
+        confirmButtonText:nuevoEstado===1
+            ?'Activar'
+            :'Desactivar',
+        cancelButtonText:'Cancelar',
+        confirmButtonColor:nuevoEstado===1
+            ?'#23984f'
+            :'#d99400',
+        cancelButtonColor:'#6c757d'
     });
 
-// EDITAR MEMBRESIA
+    if(!result.isConfirmed){
+        return;
+    }
 
-
-$('#editMembershipForm').on('submit', async function(e){
-
-        e.preventDefault();
-
-        let formData = new FormData();
-
-        formData.append('id', $('#edit_id').val());
-        formData.append('nombre', $('#edit_nombre').val());
-        formData.append('descripcion', $('#edit_descripcion').val());
-        formData.append('precio', $('#edit_precio').val());
-        formData.append('promocion', $('#edit_promocion').is(':checked') ? 1 : 0);
-        formData.append('precio_promocion', $('#edit_precio_promocion').val());
-        formData.append('dias', $('#edit_dias').val());
-
-        try{
-
-            let response = await fetch('api/update_membership_admin.php', {
-
-                    method:'POST',
-                    body:formData
-                });
-
-            let data = await response.json();
-
-            if(data.success){
-
-                Toastify({
-                    text:data.message,
-                    duration:3000,
-                    gravity:'top',
-                    position:'right',
-                    style:{
-                        background:
-                        "linear-gradient(to right,#183B6B,#16BFFD)"
-                    }
-
-                }).showToast();
-
-                $('#editMembershipModal').modal('hide');
-
-                setTimeout(() => {
-
-                    location.reload();
-
-                },1000);
-
-            }else{
-
-                Swal.fire({
-
-                    icon:'error',
-                    title:'Error',
-                    text:data.message,
-                    confirmButtonColor:'#183B6B'
-                });
-
+    try{
+        const result=await apiFetch(
+            'api/toggle_membership.php',
+            {
+                method:'POST',
+                headers:{
+                    'Content-Type':
+                    'application/x-www-form-urlencoded'
+                },
+                body:new URLSearchParams({
+                    id:id,
+                    estado:nuevoEstado
+                }).toString()
             }
+        );
 
-        }catch(error){
+        if(!result) return;
 
-            console.error(error);
+        const data=result.data;
 
-            Swal.fire({
-                icon:'error',
-                title:'Error',
-                text:'No fue posible actualizar la membresía.',
-                confirmButtonColor:'#183B6B'
-            });
-
+        if(!data.success){
+            throw new Error(
+                data.message
+                ||'No fue posible actualizar el estado.'
+            );
         }
 
+        showMembershipToast(data.message);
+
+        setTimeout(()=>{
+            location.reload();
+        },900);
+    }catch(error){
+        console.error(error);
+
+        showMembershipError(
+            error.message
+            ||'No fue posible actualizar el estado.'
+        );
+    }
+});
+
+$(document).on('click','.deleteMembershipBtn',async function(){
+    const id=$(this).data('id');
+    const nombre=$(this).data('nombre');
+
+    const result=await Swal.fire({
+        icon:'warning',
+        title:'¿Eliminar definitivamente?',
+        text:`La membresía "${nombre}" será eliminada.`,
+        showCancelButton:true,
+        confirmButtonText:'Eliminar',
+        cancelButtonText:'Cancelar',
+        confirmButtonColor:'#d93a62',
+        cancelButtonColor:'#6c757d'
     });
 
-// ACTIVAR / DESACTIVAR MEMBRESIA
+    if(!result.isConfirmed){
+        return;
+    }
 
-$(document).on('click', '.toggleMembershipBtn', async function(){
-
-        let id = $(this).data('id');
-        let estadoActual = parseInt($(this).data('estado'));
-        let nombre = $(this).data('nombre');
-
-        let nuevoEstado = estadoActual === 1 
-        ? 0 
-        : 1;
-
-        let accion = nuevoEstado === 1
-        ? 'activar'
-        : 'desactivar';
-
-        let result = await Swal.fire({
-
-            icon:'warning',
-            title:`¿Desea ${accion} esta membresía?`,
-            text:nombre,
-            showCancelButton:true,
-            confirmButtonText:'Aceptar',
-            cancelButtonText:'Cancelar',
-            confirmButtonColor:'#183B6B',
-            cancelButtonColor:'#dc3545'
-        });
-
-        if(!result.isConfirmed){
-
-            return;
-        }
-
-        try{
-
-            let response = await fetch('api/toggle_membership.php', {
-
-                    method:'POST',
-                    headers:{
-
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-
-                    body: `id=${id}&estado=${nuevoEstado}`
-
-                });
-
-            let data = await response.json();
-
-            if(data.success){
-
-                Toastify({
-                    text:data.message,
-                    duration:3000,
-                    gravity:'top',
-                    position:'right',
-
-                    style:{
-                        background:
-                        "linear-gradient(to right,#183B6B,#16BFFD)"
-                    }
-
-                }).showToast();
-
-                setTimeout(() => {
-
-                    location.reload();
-
-                },1000);
-
-            }else{
-
-                Swal.fire({
-                    icon:'error',
-                    title:'Error',
-                    text:data.message,
-                    confirmButtonColor:'#183B6B'
-                });
+    try{
+        const result=await apiFetch(
+            'api/delete_membership.php',
+            {
+                method:'POST',
+                headers:{
+                    'Content-Type':
+                    'application/x-www-form-urlencoded'
+                },
+                body:new URLSearchParams({
+                    id:id
+                }).toString()
             }
+        );
 
-        }catch(error){
+        if(!result) return;
 
-            console.error(error);
+        const data=result.data;
 
-            Swal.fire({
-                icon:'error',
-                title:'Error',
-                text:'No fue posible actualizar el estado.',
-                confirmButtonColor:'#183B6B'
-            });
-
-        }
-    });
-
-    // =====================================
-// ELIMINAR MEMBRESIA
-// =====================================
-
-$(document).on('click', '.deleteMembershipBtn', async function(){
-
-        let id = $(this).data('id');
-
-        let nombre = $(this).data('nombre');
-
-        let result = await Swal.fire({
-
-            icon:'warning',
-            title:'¿Eliminar definitivamente?',
-            text:`La membresía "${nombre}" será eliminada.`,
-            showCancelButton:true,
-            confirmButtonText:'Eliminar',
-            cancelButtonText:'Cancelar',
-            confirmButtonColor:'#dc3545',
-            cancelButtonColor:'#6c757d'
-        });
-
-        if(!result.isConfirmed){
-
-            return;
+        if(!data.success){
+            throw new Error(
+                data.message
+                ||'No fue posible eliminar la membresía.'
+            );
         }
 
-        try{
-
-            let response = await fetch('api/delete_membership.php', {
-
-                    method:'POST',
-                    headers:{
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-
-                    body:`id=${id}`
-                });
-
-            let data = await response.json();
-
-            if(data.success){
-
-                Toastify({
-                    text:data.message,
-                    duration:3000,
-                    gravity:'top',
-                    position:'right',
-
-                    style:{
-                        background:
-                        "linear-gradient(to right,#dc3545,#ff6b6b)"
-                    }
-
-                }).showToast();
-
-                setTimeout(() => {
-                    location.reload();
-                },1000);
-
-            }else{
-
-                Swal.fire({
-                    icon:'error',
-                    title:'Error',
-                    text:data.message,
-                    confirmButtonColor:'#183B6B'
-                });
-
+        Toastify({
+            text:data.message,
+            duration:3000,
+            gravity:'top',
+            position:'right',
+            style:{
+                background:
+                'linear-gradient(to right,#d93a62,#ff6b81)'
             }
+        }).showToast();
 
-        }catch(error){
+        setTimeout(()=>{
+            location.reload();
+        },900);
+    }catch(error){
+        console.error(error);
 
-            console.error(error);
+        showMembershipError(
+            error.message
+            ||'No fue posible eliminar la membresía.'
+        );
+    }
+});
 
-            Swal.fire({
-                icon:'error',
-                title:'Error',
-                text:'No fue posible eliminar la membresía.',
-                confirmButtonColor:'#183B6B'
-            });
+$('#addMembershipModal').on('hidden.bs.modal',function(){
+    $('#createMembershipForm')[0].reset();
+    $('#promoContainer').addClass('d-none');
+    $('#precio_promocion').prop('required',false).val('');
+});
 
-        }
+$('#editMembershipModal').on('hidden.bs.modal',function(){
+    $('#editMembershipForm')[0].reset();
+    $('#editPromoContainer').addClass('d-none');
+
+    $('#edit_precio_promocion')
+        .prop('required',false)
+        .val('');
+});
+
+function validateMembershipData(
+    nombre,
+    precio,
+    dias,
+    promocion,
+    precioPromocion
+){
+    if(nombre.length<2){
+        showMembershipWarning(
+            'Nombre no válido',
+            'El nombre debe contener al menos 2 caracteres.'
+        );
+
+        return false;
+    }
+
+    if(!Number.isFinite(dias)||dias<1){
+        showMembershipWarning(
+            'Duración no válida',
+            'La duración debe ser de al menos un día.'
+        );
+
+        return false;
+    }
+
+    if(!Number.isFinite(precio)||precio<0){
+        showMembershipWarning(
+            'Precio no válido',
+            'Ingresa un precio normal válido.'
+        );
+
+        return false;
+    }
+
+    if(
+        promocion
+        &&(
+            !Number.isFinite(precioPromocion)
+            ||precioPromocion<0
+        )
+    ){
+        showMembershipWarning(
+            'Promoción no válida',
+            'Ingresa un precio de promoción válido.'
+        );
+
+        return false;
+    }
+
+    if(promocion&&precioPromocion>=precio){
+        showMembershipWarning(
+            'Revisa la promoción',
+            'El precio promocional debe ser menor al precio normal.'
+        );
+
+        return false;
+    }
+
+    return true;
+}
+
+function showMembershipWarning(title,message){
+    Swal.fire({
+        icon:'warning',
+        title:title,
+        text:message,
+        confirmButtonColor:'#176dd3'
     });
+}
+
+function showMembershipError(message){
+    Swal.fire({
+        icon:'error',
+        title:'Error',
+        text:message,
+        confirmButtonColor:'#176dd3'
+    });
+}
+
+function showMembershipToast(message){
+    Toastify({
+        text:message,
+        duration:3000,
+        gravity:'top',
+        position:'right',
+        style:{
+            background:
+            'linear-gradient(to right,#183B6B,#16BFFD)'
+        }
+    }).showToast();
+}
+
+filterMemberships();

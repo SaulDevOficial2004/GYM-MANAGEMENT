@@ -1,6 +1,20 @@
 <?php
 
-require_once '../php_action/conn_db.php';
+require_once __DIR__ . '/../includes/api_auth.php';
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
+}
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
+
+header('Content-Type: application/json; charset=utf-8');
+
+require_once __DIR__ . '/../php_action/conn_db.php';
 
 $id = $_POST['id'];
 
@@ -18,7 +32,7 @@ $stmt->bind_param(
 
 $stmt->execute();
 
-echo json_encode([
+jsonResponse([
     "success" => true,
     "message" => "Producto eliminado"
 ]);

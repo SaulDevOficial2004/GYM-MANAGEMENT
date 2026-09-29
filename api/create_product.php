@@ -1,20 +1,18 @@
 <?php
 
-session_start();
+require_once __DIR__ . '/../php_action/conn_db.php';
+require_once __DIR__ . '/../includes/api_auth.php';
+require_once __DIR__ . '/../includes/audit.php';
 
-header('Content-Type: application/json');
-
-require_once '../php_action/conn_db.php';
-
-if(!isset($_SESSION['telefono'])){
-
-    echo json_encode([
-        "success" => false,
-        "message" => "Sesión expirada"
-    ]);
-
-    exit();
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    apiError('Método no permitido', 405);
 }
+
+requireApiRoles([
+    'Administrador',
+    'Dueño',
+    'Recepcionista'
+]);
 
 $nombre = trim($_POST['nombre']);
 $descripcion = trim($_POST['descripcion']);
@@ -45,17 +43,56 @@ $stmt->bind_param(
     $stock
 );
 
+$connect->begin_transaction();
+
+try{
+
 if($stmt->execute()){
 
-    echo json_encode([
+    $producto_id = $connect->insert_id;
+    $usuario_id = apiCurrentUserId();
+
+    if (!registerActivity(
+        $connect,
+        $usuario_id,
+        'CREAR',
+        'PRODUCTOS',
+        $producto_id,
+        "Registró el producto {$nombre}"
+    )) {
+        $connect->rollback();
+        apiError('No se pudo completar la operación.', 500);
+    }
+
+    $connect->commit();
+
+    jsonResponse([
         "success" => true,
         "message" => "Producto registrado correctamente"
     ]);
 
 }else{
 
-    echo json_encode([
+    $connect->rollback();
+
+    jsonResponse([
         "success" => false,
         "message" => "Error al registrar producto"
     ]);
+
+}
+
+}catch(Throwable $e){
+
+    $connect->rollback();
+
+    error_log(
+        'Error en create_product: ' . $e->getMessage()
+    );
+
+    apiError(
+        'No se pudo completar la operación.',
+        500
+    );
+
 }
